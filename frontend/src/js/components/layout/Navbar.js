@@ -1,32 +1,20 @@
 import logoUrl from '../../../assets/logo-sinu.jpg';
-import { getCurrentUser, isAdmin, NOMBRES_VISTA, ROLES } from '../../auth/permissions.js';
+import { getCurrentUser, NOMBRES_VISTA, ROLES } from '../../auth/permissions.js';
+import { getState } from '../../state/store.js';
 import { escapeHtml } from '../../utils/formatters.js';
 
-const PROXIMAMENTE = 'Función próximamente disponible';
-
-function tabButton(view, currentView, enabledViews) {
-  const label = NOMBRES_VISTA[view];
-
-  if (!enabledViews.includes(view)) {
-    return `<button type="button" disabled title="${PROXIMAMENTE}">${label}</button>`;
-  }
-
+function tabButton(view, currentView) {
   const active = view === currentView ? 'activa' : '';
-  return `<button type="button" class="${active}" data-view="${view}">${label}</button>`;
+  return `<button type="button" class="${active}" data-view="${view}">${NOMBRES_VISTA[view]}</button>`;
 }
 
-function menuItem({ action, ico, text, badge = false, soon = false }) {
-  if (soon) {
-    return `
-      <li><span class="dropdown-item disabled" aria-disabled="true" title="${PROXIMAMENTE}">
-        <span aria-hidden="true">${ico}</span>${text}<span class="prox">Próximamente</span>
-      </span></li>`;
-  }
-
+function menuItem({ action, view, ico, text, badge = false }) {
+  const destino = view ? `data-view="${view}"` : `data-action="${action}"`;
+  const cantidad = getState().alertasActivas;
   return `
-    <li><button class="dropdown-item" type="button" data-action="${action}">
+    <li><button class="dropdown-item" type="button" ${destino}>
       <span aria-hidden="true">${ico}</span>${text}
-      ${badge ? '<span class="badge-alertas cero" data-contador-alertas>0</span>' : ''}
+      ${badge ? `<span class="badge-alertas ${cantidad ? '' : 'cero'}" data-contador-alertas>${cantidad}</span>` : ''}
     </button></li>`;
 }
 
@@ -41,10 +29,9 @@ export function Navbar(currentView) {
 
   const items = [
     { action: 'alertas', ico: '🔔', text: 'Alertas', badge: true },
-    ...(isAdmin() ? [{ ico: '💾', text: 'Respaldo y datos', soon: true }] : []),
-    { ico: '👤', text: 'Mi perfil', soon: true },
-    { ico: '🔑', text: 'Cambiar contraseña', soon: true },
+    { view: 'perfil', ico: '👤', text: 'Mi perfil y contraseña' },
   ];
+  const cantidad = getState().alertasActivas;
 
   return `
     <header class="barra">
@@ -56,7 +43,7 @@ export function Navbar(currentView) {
           <button class="btn btn-sinu btn-usuario dropdown-toggle" type="button" data-bs-toggle="dropdown"
             aria-expanded="false" title="Menú de usuario">
             <span aria-hidden="true">${role.ico}</span>${escapeHtml(role.nombre)}
-            <span class="badge-alertas cero" data-contador-alertas aria-label="alertas activas">0</span>
+            <span class="badge-alertas ${cantidad ? '' : 'cero'}" data-contador-alertas aria-label="alertas activas">${cantidad}</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end menu-usuario">
             <li class="menu-cab"><b>${escapeHtml(user.nombre)}</b><br /><small>Usuario: ${escapeHtml(user.usuario)}</small></li>
@@ -70,12 +57,11 @@ export function Navbar(currentView) {
       </div>
       ${
         role.pestanas.length
-          ? `<nav class="tabs" aria-label="Secciones">${role.pestanas
-              .map((view) => tabButton(view, currentView, role.vistas))
-              .join('')}</nav>`
+          ? `<nav class="tabs" aria-label="Secciones">${role.pestanas.map((view) => tabButton(view, currentView)).join('')}</nav>`
           : ''
       }
     </header>
+    <div id="avisoSesion" class="aviso-sesion" role="status" aria-live="polite" hidden></div>
   `;
 }
 
@@ -83,7 +69,7 @@ export function Leyenda() {
   return `
     <footer class="leyenda-botones" aria-label="Leyenda de botones">
       <span><span class="muestra muestra-on"></span>Dorado: acción disponible</span>
-      <span><span class="muestra muestra-off"></span>Gris: no disponible o próximamente (pase el cursor para ver el motivo)</span>
+      <span><span class="muestra muestra-off"></span>Gris: no disponible en este momento (pase el cursor para ver el motivo)</span>
       <span><span class="muestra muestra-peligro"></span>Rojo: acción destructiva (pide confirmación)</span>
     </footer>
   `;

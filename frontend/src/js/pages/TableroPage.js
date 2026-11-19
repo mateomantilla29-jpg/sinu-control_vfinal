@@ -1,10 +1,8 @@
 import { getResumenTablero } from '../api/tablero.api.js';
+import { Kpis } from '../components/common/Kpis.js';
+import { Tabla } from '../components/common/Tabla.js';
 import { escapeHtml, formatCurrency, formatDate, formatNumber } from '../utils/formatters.js';
 import { empty, loading, showApiError, tag } from '../utils/ui.js';
-
-function kpi(valor, texto, color = '') {
-  return `<div class="kpi"><div class="t">${texto}</div><div class="v" ${color ? `style="color:var(--${color})"` : ''}>${valor}</div></div>`;
-}
 
 function textoDias(d) {
   if (d === 0) return 'hoy';
@@ -32,19 +30,16 @@ function PlatosPosibles(platos) {
 }
 
 function StockBajo(filas) {
-  if (!filas.length) {
-    return empty('✅ Todos los insumos están sobre el mínimo.');
-  }
-  return `<div class="tabla-wrap"><table>
-    <thead><tr><th>Insumo</th><th class="num">Disponible</th><th class="num">Mínimo</th><th>Estado</th></tr></thead>
-    <tbody>${filas
-      .map(
-        (f) => `<tr><td><b>${escapeHtml(f.insumo.nombre)}</b></td>
-        <td class="num">${formatNumber(f.disponible)} ${f.insumo.unidad}</td>
-        <td class="num">${formatNumber(f.insumo.stock_minimo)}</td>
-        <td>${f.estado === 'agotado' ? tag('Agotado', 'danger') : tag('Stock bajo', 'warn')}</td></tr>`,
-      )
-      .join('')}</tbody></table></div>`;
+  return Tabla({
+    columnas: [
+      { titulo: 'Insumo', render: (f) => `<b>${escapeHtml(f.insumo.nombre)}</b>` },
+      { titulo: 'Disponible', clase: 'num', render: (f) => `${formatNumber(f.disponible)} ${f.insumo.unidad}` },
+      { titulo: 'Mínimo', clase: 'num', render: (f) => formatNumber(f.insumo.stock_minimo) },
+      { titulo: 'Estado', render: (f) => (f.estado === 'agotado' ? tag('Agotado', 'danger') : tag('Stock bajo', 'warn')) },
+    ],
+    filas,
+    vacio: '✅ Todos los insumos están sobre el mínimo.',
+  });
 }
 
 function Vencimientos(lotes) {
@@ -76,19 +71,22 @@ export function mountTableroPage() {
     .then(({ data: r }) => {
       root.innerHTML = `
         <div class="cabecera-vista"><h2>Tablero general</h2><small>${formatDate(r.fecha)}</small></div>
-        <div class="kpis">
-          ${kpi(formatCurrency(r.ventas_hoy.total), `Ventas de hoy (${r.ventas_hoy.cantidad})`)}
-          ${kpi(r.pedidos_en_cocina, 'Pedidos en cocina')}
-          ${kpi(r.alertas_activas, 'Alertas activas', 'danger')}
-          ${kpi(r.stock_bajo.length, 'Insumos bajo mínimo o agotados', 'warn')}
-          ${kpi(`${r.platos_no_disponibles} / ${r.platos.length}`, 'Platos no disponibles')}
-        </div>
+        ${Kpis([
+          { valor: formatCurrency(r.ventas_hoy.total), texto: `Ventas de hoy (${r.ventas_hoy.cantidad})` },
+          { valor: r.pedidos_en_cocina, texto: 'Pedidos en cocina' },
+          { valor: r.alertas_activas, texto: 'Alertas activas', color: 'danger' },
+          { valor: r.stock_bajo.length, texto: 'Insumos bajo mínimo o agotados', color: 'warn' },
+          { valor: `${r.platos_no_disponibles} / ${r.platos.length}`, texto: 'Platos no disponibles' },
+        ])}
         <div class="tarjeta"><h3>Platos posibles ahora</h3>${PlatosPosibles(r.platos)}</div>
         <div class="tarjeta"><h3>Stock bajo</h3>${StockBajo(r.stock_bajo)}</div>
         <div class="tarjeta"><h3>Vencimientos de los próximos 7 días</h3>${Vencimientos(r.por_vencer)}</div>
         <div class="tarjeta">
-          <h3>Más vendidos y reportes</h3>
-          <button class="btn btn-sinu" type="button" disabled title="Función próximamente disponible">Ver reportes avanzados<span class="prox">Próximamente</span></button>
+          <h3>Más vendidos, reportes y caja</h3>
+          <div class="acciones">
+            <button class="btn btn-sinu" type="button" data-view="reportes">Ver reportes</button>
+            <button class="btn btn-sinu" type="button" data-view="caja">Cierre de caja</button>
+          </div>
         </div>
       `;
     })

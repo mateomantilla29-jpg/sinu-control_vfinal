@@ -1,9 +1,14 @@
 import logoUrl from '../../assets/logo-sinu.jpg';
 import { login } from '../api/auth.api.js';
 import { saveSession } from '../auth/session.service.js';
+import { Campo, leerFormulario, mostrarErrores } from '../components/common/Campo.js';
+import { actions } from '../state/store.js';
 import { formatApiError } from '../utils/errorMessages.js';
+import { escapeHtml } from '../utils/formatters.js';
+import { esquemaLogin, esValido, validar } from '../utils/validators.js';
 
 export function LoginPage() {
+  const aviso = actions.consumirAvisoLogin();
   return `
     <section class="pantalla-login">
       <div class="login-caja">
@@ -19,18 +24,13 @@ export function LoginPage() {
           </button>
         </div>
         <form class="login-form" id="loginForm" novalidate>
-          <div class="mb-3">
-            <label class="form-label" for="loginUsuario">Usuario</label>
-            <input class="form-control" id="loginUsuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" />
-          </div>
-          <div class="mb-2">
-            <label class="form-label" for="loginClave">Contraseña</label>
-            <input class="form-control" id="loginClave" type="password" autocomplete="current-password" />
-          </div>
-          <div class="msg-error text-center mb-2" id="loginError" role="alert"></div>
+          ${aviso ? `<div class="aviso-login" role="alert">⏳ ${escapeHtml(aviso)}</div>` : ''}
+          ${Campo({ name: 'usuario', label: 'Usuario', attrs: 'autocomplete="username" autocapitalize="none" spellcheck="false"' })}
+          ${Campo({ name: 'contrasena', label: 'Contraseña', type: 'password', attrs: 'autocomplete="current-password"' })}
+          <div class="msg-error text-center mb-2" data-error-general role="alert"></div>
           <button class="btn btn-sinu xl w-100" type="submit" id="btnIngresar">Ingresar</button>
         </form>
-        <p class="muted small mt-3">Los datos se guardan en el servidor de Sinu Control (API).</p>
+        <p class="muted small mt-3">Los datos se guardan en el servidor de Sinu Control (API + MySQL).</p>
       </div>
     </section>
   `;
@@ -38,9 +38,8 @@ export function LoginPage() {
 
 export function mountLoginPage({ navigate } = {}) {
   const form = document.querySelector('#loginForm');
-  const usuario = document.querySelector('#loginUsuario');
-  const clave = document.querySelector('#loginClave');
-  const error = document.querySelector('#loginError');
+  const usuario = form.querySelector('[name="usuario"]');
+  const clave = form.querySelector('[name="contrasena"]');
   const boton = document.querySelector('#btnIngresar');
   const tarjetas = document.querySelectorAll('.rol-card');
 
@@ -53,31 +52,32 @@ export function mountLoginPage({ navigate } = {}) {
         other.setAttribute('aria-pressed', String(selected));
       });
       usuario.value = card.dataset.usuario;
-      error.textContent = '';
+      mostrarErrores(form, {});
       clave.focus();
     });
   });
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    const valores = leerFormulario(form);
+    valores.contrasena = clave.value; // la contraseña no se recorta
 
-    if (!usuario.value.trim() || !clave.value) {
-      error.textContent = 'Escriba usuario y contraseña.';
+    const errores = validar(valores, esquemaLogin);
+    if (!esValido(errores)) {
+      mostrarErrores(form, errores);
       return;
     }
 
     boton.disabled = true;
     try {
-      const response = await login({
-        usuario: usuario.value.trim().toLowerCase(),
-        contrasena: clave.value,
-      });
+      const response = await login({ usuario: valores.usuario.toLowerCase(), contrasena: valores.contrasena });
       saveSession(response.data.access_token, response.data.usuario);
       navigate?.('login'); // el router redirige a la vista inicial del rol
     } catch (apiError) {
       const formatted = formatApiError(apiError, 'No fue posible iniciar sesión.');
-      error.textContent =
-        formatted.status === 401 ? 'Usuario o contraseña incorrectos.' : formatted.message;
+      mostrarErrores(form, {
+        _general: formatted.status === 401 ? formatted.message || 'Usuario o contraseña incorrectos.' : formatted.message,
+      });
       clave.value = '';
       clave.focus();
     } finally {

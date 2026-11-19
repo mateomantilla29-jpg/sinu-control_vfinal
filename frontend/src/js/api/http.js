@@ -52,9 +52,14 @@ export async function request(path, options = {}) {
   const bodyText = await response.text();
   const data = parseBody(bodyText);
 
-  // Token vencido o inválido con sesión abierta: se cierra y main.js vuelve al login
+  // Token vencido o inválido con sesión abierta: se cierra con un aviso claro y main.js vuelve al login
   if (response.status === 401 && token) {
-    clearSession();
+    const motivo = data?.error?.message ?? '';
+    clearSession(
+      motivo === 'Token expirado.'
+        ? 'Su sesión expiró. Ingrese de nuevo para continuar.'
+        : motivo || 'Su sesión ya no es válida. Ingrese de nuevo.',
+    );
     window.dispatchEvent(new CustomEvent('sesion-expirada'));
   }
 

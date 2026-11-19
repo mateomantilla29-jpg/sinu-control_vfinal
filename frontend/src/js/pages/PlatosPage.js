@@ -1,7 +1,21 @@
 import { getInsumos } from '../api/inventario.api.js';
 import { createPlato, deletePlato, getPlatos, updatePlato } from '../api/platos.api.js';
+import { Campo, leerFormulario, mostrarErrorApi, mostrarErrores } from '../components/common/Campo.js';
+import { Tabla } from '../components/common/Tabla.js';
 import { escapeHtml, formatCurrency, formatNumber } from '../utils/formatters.js';
 import { confirmar, empty, loading, showApiError, tag, toast } from '../utils/ui.js';
+import { esquemaPlato, esValido, validar } from '../utils/validators.js';
+
+/** Reglas de la receta (las mismas de PlatoDTO): al menos un insumo, sin repetidos, cantidades > 0. */
+function validarReceta(receta) {
+  const items = receta.filter((r) => r.insumo_id || r.cantidad !== '');
+  if (!items.length) return 'La receta debe tener al menos un insumo.';
+  if (items.some((r) => !r.insumo_id)) return 'Seleccione el insumo de cada fila de la receta.';
+  if (items.some((r) => !(Number(r.cantidad) > 0))) return 'Cada insumo de la receta necesita una cantidad mayor que 0.';
+  const ids = items.map((r) => r.insumo_id);
+  if (new Set(ids).size !== ids.length) return 'Un insumo está repetido en la receta.';
+  return '';
+}
 
 function opcionesInsumos(insumos, seleccionado) {
   return `<option value="">Insumo…</option>${insumos
@@ -29,19 +43,18 @@ function Formulario(plato, receta, insumos) {
   return `
     <h3>${plato ? 'Editar plato' : 'Nuevo plato'}</h3>
     <form id="formPlato" novalidate>
-      <div class="mb-3"><label class="form-label" for="plNombre">Nombre</label>
-        <input class="form-control" id="plNombre" value="${escapeHtml(plato?.nombre ?? '')}" placeholder="Ej: Mojarra frita" /></div>
-      <div class="row g-3 mb-3 align-items-end">
-        <div class="col-sm-6"><label class="form-label" for="plPrecio">Precio (COP)</label>
-          <input class="form-control" id="plPrecio" type="number" min="1" step="100" value="${plato?.precio ?? ''}" /></div>
-        <div class="col-sm-6"><div class="form-check">
-          <input class="form-check-input" id="plActivo" type="checkbox" ${!plato || plato.activo ? 'checked' : ''} />
+      ${Campo({ name: 'nombre', label: 'Nombre', value: plato?.nombre, placeholder: 'Ej: Mojarra frita' })}
+      <div class="row g-3 align-items-end">
+        ${Campo({ name: 'precio', label: 'Precio (COP)', type: 'number', value: plato?.precio, attrs: 'min="1" step="100"', col: 'col-sm-6' })}
+        <div class="col-sm-6 mb-3"><div class="form-check">
+          <input class="form-check-input" id="plActivo" name="activo" type="checkbox" ${!plato || plato.activo ? 'checked' : ''} />
           <label class="form-check-label" for="plActivo">Activo en el menú</label></div></div>
       </div>
       <h3>Receta (cantidad por plato)</h3>
       <div id="recetaFilas">${FilasReceta(receta, insumos)}</div>
+      <div class="invalid-feedback d-block" data-error-de="receta"></div>
       <button class="btn btn-sinu w-100" type="button" id="btnAgregarInsumo">+ Agregar insumo</button>
-      <div class="msg-error my-2" id="plError"></div>
+      <div class="msg-error my-2" data-error-general></div>
       <div class="d-flex gap-2 flex-wrap">
         ${plato ? '<button class="btn btn-sinu" type="button" id="btnCancelarPlato">Cancelar edición</button>' : ''}
         <button class="btn btn-sinu" type="submit">${plato ? 'Guardar cambios' : 'Crear plato'}</button>
@@ -50,33 +63,30 @@ function Formulario(plato, receta, insumos) {
   `;
 }
 
-function Tabla(menu) {
-  if (!menu.length) {
-    return empty('No hay platos. Cree el primero.');
-  }
-  return `<div class="tabla-wrap"><table>
-    <thead><tr><th>Plato</th><th class="num">Precio</th><th class="num">Posibles</th><th>Estado</th><th></th></tr></thead>
-    <tbody>${menu
-      .map((d) => {
-        const estado = !d.plato.activo
-          ? tag('Inactivo', 'gris')
-          : d.disponible
-            ? tag('Disponible', 'ok')
-            : `${tag('No disponible', 'danger')}${d.limitante ? `<br /><small>Falta: ${escapeHtml(d.limitante)}</small>` : ''}`;
-        return `<tr>
-          <td><b>${escapeHtml(d.plato.nombre)}</b><br /><small>${d.plato.receta
-            .map((r) => `${escapeHtml(r.insumo)} ${formatNumber(r.cantidad)} ${r.unidad}`)
-            .join(' · ')}</small></td>
-          <td class="num">${formatCurrency(d.plato.precio)}</td>
-          <td class="num"><b>${d.posibles}</b></td>
-          <td>${estado}</td>
-          <td><div class="acciones">
-            <button class="btn btn-sinu sm" type="button" data-editar="${d.plato.id}">Editar</button>
-            <button class="btn btn-sinu sm peligro" type="button" data-eliminar="${d.plato.id}">Eliminar</button>
-          </div></td></tr>`;
-      })
-      .join('')}</tbody></table></div>`;
+function estadoPlato(d) {
+  if (!d.plato.activo) return tag('Inactivo', 'gris');
+  if (d.disponible) return tag('Disponible', 'ok');
+  return `${tag('No disponible', 'danger')}${d.limitante ? `<br /><small>Falta: ${escapeHtml(d.limitante)}</small>` : ''}`;
 }
+
+const COLUMNAS = [
+  {
+    titulo: 'Plato',
+    render: (d) => `<b>${escapeHtml(d.plato.nombre)}</b><br /><small>${d.plato.receta
+      .map((r) => `${escapeHtml(r.insumo)} ${formatNumber(r.cantidad)} ${r.unidad}`)
+      .join(' · ')}</small>`,
+  },
+  { titulo: 'Precio', clase: 'num', render: (d) => formatCurrency(d.plato.precio) },
+  { titulo: 'Posibles', clase: 'num', render: (d) => `<b>${d.posibles}</b>` },
+  { titulo: 'Estado', render: estadoPlato },
+  {
+    titulo: '',
+    render: (d) => `<div class="acciones">
+      <button class="btn btn-sinu sm" type="button" data-editar="${d.plato.id}">Editar</button>
+      <button class="btn btn-sinu sm peligro" type="button" data-eliminar="${d.plato.id}">Eliminar</button>
+    </div>`,
+  },
+];
 
 export function PlatosPage() {
   return `<section class="contenedor" id="platosRoot">${loading('Cargando platos…')}</section>`;
@@ -95,7 +105,7 @@ export function mountPlatosPage({ refreshAlertCount } = {}) {
     root.innerHTML = `
       <div class="cabecera-vista"><h2>Platos y recetas</h2></div>
       <div class="tarjeta">${Formulario(platoEditado(), receta, insumos)}</div>
-      <div class="tarjeta"><h3>Menú y platos posibles</h3>${Tabla(menu)}</div>
+      <div class="tarjeta"><h3>Menú y platos posibles</h3>${Tabla({ columnas: COLUMNAS, filas: menu, vacio: 'No hay platos. Cree el primero.' })}</div>
     `;
   }
 
@@ -132,17 +142,23 @@ export function mountPlatosPage({ refreshAlertCount } = {}) {
 
   root.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const items = receta.filter((r) => r.insumo_id || r.cantidad !== '');
-    const payload = {
-      nombre: root.querySelector('#plNombre').value.trim(),
-      precio: Number(root.querySelector('#plPrecio').value) || null,
-      activo: root.querySelector('#plActivo').checked,
-      receta: items.map((r) => ({ insumo_id: r.insumo_id, cantidad: Number(r.cantidad) })),
-    };
-    if (items.some((r) => !r.insumo_id)) {
-      root.querySelector('#plError').textContent = 'Hay un insumo no válido en la receta.';
+    const form = event.target;
+    const valores = leerFormulario(form);
+    const errores = validar(valores, esquemaPlato);
+    const errorReceta = validarReceta(receta);
+    if (errorReceta) errores.receta = errorReceta;
+    if (!esValido(errores)) {
+      mostrarErrores(form, errores);
       return;
     }
+    const payload = {
+      nombre: valores.nombre,
+      precio: Number(valores.precio),
+      activo: valores.activo,
+      receta: receta
+        .filter((r) => r.insumo_id || r.cantidad !== '')
+        .map((r) => ({ insumo_id: r.insumo_id, cantidad: Number(r.cantidad) })),
+    };
     try {
       if (editando) {
         await updatePlato(editando, payload);
@@ -155,7 +171,7 @@ export function mountPlatosPage({ refreshAlertCount } = {}) {
       await cargar();
       refreshAlertCount?.();
     } catch (error) {
-      root.querySelector('#plError').textContent = showApiError(error);
+      mostrarErrorApi(form, error);
     }
   });
 

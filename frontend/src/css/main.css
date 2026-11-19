@@ -269,3 +269,14 @@ body.sin-scroll { overflow: hidden; }
   .tarjeta { padding: 14px; }
   .tabla-wrap th, .tabla-wrap td { padding: .5em .55em; font-size: .88rem; }
 }
+
+/* =========== FASE FINAL: sesión, formularios, totales y nuevas vistas =========== */
+.aviso-sesion { position: sticky; top: 0; z-index: 1019; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 8px 18px; background: var(--warn-claro); border-bottom: 1px solid var(--warn); color: var(--texto); font-size: .95rem; }
+.aviso-login { background: var(--warn-claro); border: 1px solid var(--warn); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; text-align: left; }
+.form-control.is-invalid, .form-select.is-invalid { border-color: var(--danger); }
+.invalid-feedback { color: var(--danger); font-size: .88rem; }
+.tabla-wrap tfoot td { background: var(--dorado-claro); border-top: 2px solid var(--dorado); }
+.dos-col { display: grid; grid-template-columns: 1fr; gap: 18px; }
+@media (min-width: 900px) { .dos-col { grid-template-columns: 1fr 1fr; } .dos-col > .tarjeta { margin-bottom: 0; } }
+.cifra-grande { font-family: Georgia, serif; font-size: 2rem; color: var(--dorado-texto); font-weight: 700; }
+.nota-coincide { border-left: 4px solid var(--ok); background: var(--ok-claro); padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; }

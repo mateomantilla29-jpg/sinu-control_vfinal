@@ -23,3 +23,15 @@ export function getLotes({ todos = false } = {}) {
 export function createLote(payload) {
   return send('/lotes', 'POST', payload);
 }
+
+export function registrarMerma(loteId, payload) {
+  return send(`/lotes/${loteId}/merma`, 'POST', payload);
+}
+
+export function darDeBajaLote(loteId) {
+  return send(`/lotes/${loteId}/baja`, 'POST');
+}
+
+export function darDeBajaVencidos() {
+  return send('/lotes/vencidos/baja', 'POST');
+}

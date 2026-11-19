@@ -6,14 +6,15 @@ import '../css/main.css';
 import { getAlertas, getContadorAlertas } from './api/alertas.api.js';
 import { homeView, isAdmin, isAuthenticated } from './auth/permissions.js';
 import { clearSession } from './auth/session.service.js';
+import { detenerVigilancia, iniciarVigilancia } from './auth/sessionWatcher.js';
 import { Leyenda, Navbar } from './components/layout/Navbar.js';
 import { requireView } from './router/guards.js';
 import { getRoute, normalizeRouteView } from './router/routes.js';
+import { actions, getState, subscribe } from './state/store.js';
 import { escapeHtml } from './utils/formatters.js';
 import { closeModal, empty, showInfoModal } from './utils/ui.js';
 
 const app = document.querySelector('#app');
-let currentView = 'login';
 let cleanup = null;
 
 function renderForbiddenPage() {
@@ -33,13 +34,21 @@ function renderForbiddenPage() {
 
 function renderShell(pageHtml) {
   app.innerHTML = `
-    ${Navbar(currentView)}
+    ${Navbar(getState().currentView)}
     <main id="page-root">${pageHtml}</main>
     ${Leyenda()}
   `;
 }
 
-/** Actualiza todos los contadores de alertas visibles (botón y menú de usuario). */
+// Los contadores del menú reaccionan al estado: cualquier página puede actualizarlo
+subscribe((cantidad) => {
+  document.querySelectorAll('[data-contador-alertas]').forEach((element) => {
+    element.textContent = cantidad;
+    element.classList.toggle('cero', cantidad === 0);
+  });
+}, (s) => s.alertasActivas);
+
+/** Consulta el número de alertas activas y lo guarda en el store. */
 export async function refreshAlertCount() {
   if (!isAuthenticated()) {
     return;
@@ -47,11 +56,7 @@ export async function refreshAlertCount() {
 
   try {
     const response = await getContadorAlertas();
-    const count = response.data.activas;
-    document.querySelectorAll('[data-contador-alertas]').forEach((element) => {
-      element.textContent = count;
-      element.classList.toggle('cero', count === 0);
-    });
+    actions.setAlertasActivas(response.data.activas);
   } catch {
     // El contador es informativo: si falla, la vista sigue funcionando
   }
@@ -63,11 +68,11 @@ function accessDenied(reason) {
     return;
   }
 
-  currentView = 'forbidden';
+  actions.setView('forbidden');
   renderShell(renderForbiddenPage());
 }
 
-function render(view = currentView) {
+function render(view = getState().currentView) {
   cleanup?.();
   cleanup = null;
   closeModal();
@@ -81,7 +86,7 @@ function render(view = currentView) {
   }
 
   if (!route) {
-    currentView = 'not-found';
+    actions.setView('not-found');
     renderShell(`<section class="contenedor">${empty('Página no encontrada.')}</section>`);
     return;
   }
@@ -90,13 +95,14 @@ function render(view = currentView) {
     return;
   }
 
-  currentView = route.path;
-  if (normalizeRouteView(window.location.hash) !== currentView) {
-    history.replaceState(null, '', `#${currentView}`);
+  actions.setView(route.path);
+  if (normalizeRouteView(window.location.hash) !== route.path) {
+    history.replaceState(null, '', `#${route.path}`);
   }
 
   const pageHtml = route.page() ?? '';
   if (route.public) {
+    detenerVigilancia();
     app.innerHTML = pageHtml;
   } else {
     renderShell(pageHtml);
@@ -106,6 +112,11 @@ function render(view = currentView) {
   const result = route.mount?.({ navigate, render, view: normalized, refreshAlertCount });
   cleanup = typeof result === 'function' ? result : null;
   window.scrollTo({ top: 0 });
+
+  // Se inicia después de montar: si el token ya venció, vuelve al login sin dejar la vista a medias
+  if (!route.public) {
+    iniciarVigilancia(() => navigate('login'));
+  }
 }
 
 export function navigate(view = 'login') {
@@ -117,6 +128,7 @@ async function showAlertasModal() {
   try {
     const response = await getAlertas('activa');
     const alertas = response.data;
+    actions.setAlertasActivas(alertas.length);
     showInfoModal(
       `
       <h2>🔔 Alertas activas (${alertas.length})</h2>
@@ -176,7 +188,7 @@ document.addEventListener('keydown', (event) => {
 window.addEventListener('sesion-expirada', () => navigate('login'));
 window.addEventListener('hashchange', () => {
   const view = normalizeRouteView(window.location.hash);
-  if (view !== currentView) {
+  if (view !== getState().currentView) {
     navigate(view);
   }
 });

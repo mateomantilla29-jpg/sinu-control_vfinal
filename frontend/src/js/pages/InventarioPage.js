@@ -1,8 +1,12 @@
 import { createInsumo, deleteInsumo, getInsumos, updateInsumo } from '../api/inventario.api.js';
+import { Campo, leerFormulario, mostrarErrorApi, mostrarErrores } from '../components/common/Campo.js';
+import { Kpis } from '../components/common/Kpis.js';
+import { Tabla } from '../components/common/Tabla.js';
 import { escapeHtml, formatDate, formatNumber } from '../utils/formatters.js';
 import { confirmar, empty, loading, showApiError, tag, toast } from '../utils/ui.js';
+import { esquemaInsumo, esValido, validar } from '../utils/validators.js';
 
-const UNIDADES = ['kg', 'g', 'l', 'unidad'];
+const UNIDADES = ['kg', 'g', 'l', 'unidad'].map((u) => ({ value: u, label: u }));
 
 function tagEstado(fila) {
   const base = { agotado: tag('Agotado', 'danger'), bajo: tag('Stock bajo', 'warn'), ok: tag('OK', 'ok') }[fila.estado];
@@ -13,17 +17,13 @@ function Formulario(insumo) {
   return `
     <h3>${insumo ? 'Editar insumo' : 'Alta de insumo'}</h3>
     <form id="formInsumo" novalidate>
-      <div class="mb-3"><label class="form-label" for="inNombre">Nombre</label>
-        <input class="form-control" id="inNombre" value="${escapeHtml(insumo?.nombre ?? '')}" placeholder="Ej: Pargo rojo" /></div>
-      <div class="row g-3 mb-3">
-        <div class="col-sm-6"><label class="form-label" for="inUnidad">Unidad</label>
-          <select class="form-select" id="inUnidad">${UNIDADES.map((u) => `<option ${insumo?.unidad === u ? 'selected' : ''}>${u}</option>`).join('')}</select></div>
-        <div class="col-sm-6"><label class="form-label" for="inMin">Stock mínimo</label>
-          <input class="form-control" id="inMin" type="number" min="0" step="0.01" value="${insumo?.stock_minimo ?? ''}" /></div>
+      ${Campo({ name: 'nombre', label: 'Nombre', value: insumo?.nombre, placeholder: 'Ej: Pargo rojo' })}
+      <div class="row g-3">
+        ${Campo({ name: 'unidad', label: 'Unidad', value: insumo?.unidad ?? 'kg', opciones: UNIDADES, col: 'col-sm-6' })}
+        ${Campo({ name: 'stock_minimo', label: 'Stock mínimo', type: 'number', value: insumo?.stock_minimo, attrs: 'min="0" step="0.01"', col: 'col-sm-6' })}
       </div>
-      <div class="mb-3"><label class="form-label" for="inDias">Días de alerta de vencimiento (vacío = 3 por defecto)</label>
-        <input class="form-control" id="inDias" type="number" min="0" step="1" value="${insumo?.dias_alerta ?? ''}" /></div>
-      <div class="msg-error mb-2" id="inError"></div>
+      ${Campo({ name: 'dias_alerta', label: 'Días de alerta de vencimiento', type: 'number', value: insumo?.dias_alerta, attrs: 'min="0" step="1"', help: 'Vacío = 3 días por defecto.' })}
+      <div class="msg-error mb-2" data-error-general></div>
       <div class="d-flex gap-2 flex-wrap">
         ${insumo ? '<button class="btn btn-sinu" type="button" id="btnCancelarInsumo">Cancelar</button>' : ''}
         <button class="btn btn-sinu" type="submit">${insumo ? 'Guardar' : 'Agregar insumo'}</button>
@@ -32,28 +32,21 @@ function Formulario(insumo) {
   `;
 }
 
-function Tabla(filas) {
-  if (!filas.length) {
-    return empty('No hay insumos. Agregue el primero.');
-  }
-  return `<div class="tabla-wrap"><table>
-    <thead><tr><th>Insumo</th><th class="num">Disponible</th><th class="num">Mínimo</th><th class="num">Vencido</th><th>Próx. venc.</th><th>Estado</th><th></th></tr></thead>
-    <tbody>${filas
-      .map(
-        (f) => `<tr>
-        <td><b>${escapeHtml(f.insumo.nombre)}</b><br /><small>${f.lotes_activos} lote(s) activo(s)</small></td>
-        <td class="num"><b>${formatNumber(f.disponible)}</b> ${f.insumo.unidad}</td>
-        <td class="num">${formatNumber(f.insumo.stock_minimo)}</td>
-        <td class="num">${f.vencido ? `<span style="color:var(--danger)">${formatNumber(f.vencido)}</span>` : '—'}</td>
-        <td>${f.proximo_vencimiento ? formatDate(f.proximo_vencimiento) : '—'}</td>
-        <td>${tagEstado(f)}</td>
-        <td><div class="acciones">
-          <button class="btn btn-sinu sm" type="button" data-editar="${f.insumo.id}">Editar</button>
-          <button class="btn btn-sinu sm peligro" type="button" data-eliminar="${f.insumo.id}" aria-label="Eliminar ${escapeHtml(f.insumo.nombre)}">✕</button>
-        </div></td></tr>`,
-      )
-      .join('')}</tbody></table></div>`;
-}
+const COLUMNAS = [
+  { titulo: 'Insumo', render: (f) => `<b>${escapeHtml(f.insumo.nombre)}</b><br /><small>${f.lotes_activos} lote(s) activo(s)</small>` },
+  { titulo: 'Disponible', clase: 'num', render: (f) => `<b>${formatNumber(f.disponible)}</b> ${f.insumo.unidad}` },
+  { titulo: 'Mínimo', clase: 'num', render: (f) => formatNumber(f.insumo.stock_minimo) },
+  { titulo: 'Vencido', clase: 'num', render: (f) => (f.vencido ? `<span style="color:var(--danger)">${formatNumber(f.vencido)}</span>` : '—') },
+  { titulo: 'Próx. venc.', render: (f) => (f.proximo_vencimiento ? formatDate(f.proximo_vencimiento) : '—') },
+  { titulo: 'Estado', render: tagEstado },
+  {
+    titulo: '',
+    render: (f) => `<div class="acciones">
+      <button class="btn btn-sinu sm" type="button" data-editar="${f.insumo.id}">Editar</button>
+      <button class="btn btn-sinu sm peligro" type="button" data-eliminar="${f.insumo.id}" aria-label="Eliminar ${escapeHtml(f.insumo.nombre)}">✕</button>
+    </div>`,
+  },
+];
 
 export function InventarioPage() {
   return `<section class="contenedor" id="inventarioRoot">${loading('Cargando inventario…')}</section>`;
@@ -67,16 +60,15 @@ export function mountInventarioPage({ refreshAlertCount } = {}) {
   function pintar() {
     const insumo = filas.find((f) => f.insumo.id === editando)?.insumo ?? null;
     const bajos = filas.filter((f) => f.estado !== 'ok').length;
-    const lotesActivos = filas.reduce((s, f) => s + f.lotes_activos, 0);
     root.innerHTML = `
       <div class="cabecera-vista"><h2>Inventario</h2></div>
-      <div class="kpis">
-        <div class="kpi"><div class="t">Insumos</div><div class="v">${filas.length}</div></div>
-        <div class="kpi"><div class="t">Bajo mínimo o agotados</div><div class="v" style="color:var(--${bajos ? 'warn' : 'ok'})">${bajos}</div></div>
-        <div class="kpi"><div class="t">Lotes activos</div><div class="v">${lotesActivos}</div></div>
-      </div>
+      ${Kpis([
+        { texto: 'Insumos', valor: filas.length },
+        { texto: 'Bajo mínimo o agotados', valor: bajos, color: bajos ? 'warn' : 'ok' },
+        { texto: 'Lotes activos', valor: filas.reduce((s, f) => s + f.lotes_activos, 0) },
+      ])}
       <div class="tarjeta">${Formulario(insumo)}</div>
-      <div class="tarjeta"><h3>Existencias por insumo</h3>${Tabla(filas)}</div>
+      <div class="tarjeta"><h3>Existencias por insumo</h3>${Tabla({ columnas: COLUMNAS, filas, vacio: 'No hay insumos. Agregue el primero.' })}</div>
     `;
   }
 
@@ -90,14 +82,18 @@ export function mountInventarioPage({ refreshAlertCount } = {}) {
     }
   }
 
-  async function guardar() {
-    const minimo = document.querySelector('#inMin').value;
-    const dias = document.querySelector('#inDias').value;
+  async function guardar(form) {
+    const valores = leerFormulario(form);
+    const errores = validar(valores, esquemaInsumo);
+    if (!esValido(errores)) {
+      mostrarErrores(form, errores);
+      return;
+    }
     const payload = {
-      nombre: document.querySelector('#inNombre').value.trim(),
-      unidad: document.querySelector('#inUnidad').value,
-      stock_minimo: minimo === '' ? null : Number(minimo),
-      dias_alerta: dias === '' ? null : Number(dias),
+      nombre: valores.nombre,
+      unidad: valores.unidad,
+      stock_minimo: Number(valores.stock_minimo),
+      dias_alerta: valores.dias_alerta === '' ? null : Number(valores.dias_alerta),
     };
     try {
       if (editando) {
@@ -111,13 +107,13 @@ export function mountInventarioPage({ refreshAlertCount } = {}) {
       await cargar();
       refreshAlertCount?.();
     } catch (error) {
-      document.querySelector('#inError').textContent = showApiError(error);
+      mostrarErrorApi(form, error);
     }
   }
 
   root.addEventListener('submit', (event) => {
     event.preventDefault();
-    guardar();
+    guardar(event.target);
   });
 
   root.addEventListener('click', async (event) => {
@@ -130,7 +126,7 @@ export function mountInventarioPage({ refreshAlertCount } = {}) {
     } else if (editar) {
       editando = Number(editar.dataset.editar);
       pintar();
-      root.querySelector('#inNombre').focus();
+      root.querySelector('[name="nombre"]').focus();
     } else if (eliminar) {
       const id = Number(eliminar.dataset.eliminar);
       const nombre = filas.find((f) => f.insumo.id === id)?.insumo.nombre ?? '';

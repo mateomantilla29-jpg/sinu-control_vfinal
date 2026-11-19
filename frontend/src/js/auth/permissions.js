@@ -2,18 +2,18 @@ import { getUser, hasSession } from './session.service.js';
 
 /*
  * Solo dos roles, como en SINU:
- *  · vistas  = a qué puede entrar el rol
- *  · pestanas = qué aparece en la barra (las de "proximamente" se muestran en gris)
+ *  · vistas   = a qué puede entrar el rol (el guard del router lo exige)
+ *  · pestanas = qué aparece en la barra de secciones
  */
 export const ROLES = {
   admin: {
     nombre: 'Administrador',
     ico: '⚙️',
-    vistas: ['tablero', 'mesas', 'cocina', 'platos', 'inventario', 'lotes', 'alertas'],
-    pestanas: ['tablero', 'mesas', 'cocina', 'platos', 'inventario', 'lotes', 'mermas', 'reportes', 'caja'],
+    vistas: ['tablero', 'mesas', 'cocina', 'platos', 'inventario', 'lotes', 'mermas', 'reportes', 'caja', 'usuarios', 'alertas', 'perfil'],
+    pestanas: ['tablero', 'mesas', 'cocina', 'platos', 'inventario', 'lotes', 'mermas', 'reportes', 'caja', 'usuarios'],
   },
   // El mesero entra directo al mapa de mesas
-  mesero: { nombre: 'Mesero', ico: '🧾', vistas: ['mesas'], pestanas: [] },
+  mesero: { nombre: 'Mesero', ico: '🧾', vistas: ['mesas', 'perfil'], pestanas: [] },
 };
 
 export const NOMBRES_VISTA = {
@@ -26,7 +26,9 @@ export const NOMBRES_VISTA = {
   mermas: 'Mermas',
   reportes: 'Reportes',
   caja: 'Cierre de caja',
+  usuarios: 'Usuarios',
   alertas: 'Alertas',
+  perfil: 'Mi perfil',
 };
 
 export function getCurrentUser() {

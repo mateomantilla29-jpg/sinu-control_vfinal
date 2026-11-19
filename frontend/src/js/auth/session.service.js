@@ -1,32 +1,21 @@
-import { getItem, removeItem, saveItem } from '../utils/storage.js';
+import { actions, getState } from '../state/store.js';
 
-const TOKEN_KEY = 'sinu_control_access_token';
-const USER_KEY = 'sinu_control_user';
-
-export function saveToken(token) {
-  saveItem(TOKEN_KEY, token);
-}
+/* Fachada de la sesión sobre el store (state/store.js). */
 
 export function getToken() {
-  return getItem(TOKEN_KEY);
-}
-
-export function saveUser(user) {
-  saveItem(USER_KEY, user);
+  return getState().session.token;
 }
 
 export function getUser() {
-  return getItem(USER_KEY);
+  return getState().session.user;
 }
 
 export function saveSession(token, user) {
-  saveToken(token);
-  saveUser(user);
+  actions.iniciarSesion(token, user);
 }
 
-export function clearSession() {
-  removeItem(TOKEN_KEY);
-  removeItem(USER_KEY);
+export function clearSession(aviso = '') {
+  actions.cerrarSesion(aviso);
 }
 
 export function hasSession() {

@@ -1,16 +1,19 @@
-import { createLote, getInsumos, getLotes } from '../api/inventario.api.js';
+import { createLote, darDeBajaLote, getInsumos, getLotes } from '../api/inventario.api.js';
+import { Campo, leerFormulario, mostrarErrorApi, mostrarErrores } from '../components/common/Campo.js';
+import { Tabla } from '../components/common/Tabla.js';
+import { abrirMermaModal } from '../components/inventario/MermaModal.js';
 import { escapeHtml, formatDate, formatNumber, todayIso } from '../utils/formatters.js';
-import { empty, loading, showApiError, tag, toast } from '../utils/ui.js';
+import { confirmar, empty, loading, showApiError, tag, toast } from '../utils/ui.js';
+import { esquemaLote, esValido, validar } from '../utils/validators.js';
 
-const TAG_LOTE = {
+export const TAG_LOTE = {
   activo: ['Activo', 'ok'],
   agotado: ['Agotado', 'gris'],
   vencido: ['Vencido', 'danger'],
   mermado: ['Dado de baja', 'gris'],
 };
-const PROXIMAMENTE = 'Función próximamente disponible';
 
-function textoDias(d) {
+export function textoDias(d) {
   if (d < 0) return tag(`Vencido hace ${-d} d`, 'danger');
   if (d === 0) return tag('Vence hoy', 'danger');
   if (d === 1) return tag('Mañana', 'warn');
@@ -22,46 +25,42 @@ function Formulario(insumos) {
   return `
     <h3>Ingreso de lote</h3>
     <form id="formLote" novalidate>
-      <div class="mb-3"><label class="form-label" for="loIns">Insumo</label>
-        <select class="form-select" id="loIns"><option value="">Seleccione…</option>
-          ${insumos.map((f) => `<option value="${f.insumo.id}">${escapeHtml(f.insumo.nombre)} (${f.insumo.unidad})</option>`).join('')}
-        </select></div>
-      <div class="mb-3"><label class="form-label" for="loCant">Cantidad</label>
-        <input class="form-control" id="loCant" type="number" min="0" step="0.01" placeholder="Ej: 5" /></div>
-      <div class="row g-3 mb-3">
-        <div class="col-sm-6"><label class="form-label" for="loIng">Fecha de ingreso</label>
-          <input class="form-control" id="loIng" type="date" value="${hoy}" max="${hoy}" /></div>
-        <div class="col-sm-6"><label class="form-label" for="loVen">Fecha de vencimiento</label>
-          <input class="form-control" id="loVen" type="date" min="${hoy}" /></div>
+      ${Campo({
+        name: 'insumo_id',
+        label: 'Insumo',
+        opciones: [{ value: '', label: 'Seleccione…' }, ...insumos.map((f) => ({ value: f.insumo.id, label: `${f.insumo.nombre} (${f.insumo.unidad})` }))],
+      })}
+      ${Campo({ name: 'cantidad', label: 'Cantidad', type: 'number', placeholder: 'Ej: 5', attrs: 'min="0" step="0.01"' })}
+      <div class="row g-3">
+        ${Campo({ name: 'fecha_ingreso', label: 'Fecha de ingreso', type: 'date', value: hoy, attrs: `max="${hoy}"`, col: 'col-sm-6' })}
+        ${Campo({ name: 'fecha_vencimiento', label: 'Fecha de vencimiento', type: 'date', attrs: `min="${hoy}"`, col: 'col-sm-6' })}
       </div>
-      <div class="msg-error mb-2" id="loError"></div>
+      <div class="msg-error mb-2" data-error-general></div>
       <button class="btn btn-sinu xl w-100" type="submit">Registrar lote</button>
     </form>
   `;
 }
 
-function Tabla(lotes) {
-  if (!lotes.length) {
-    return empty('No hay lotes con existencias.');
+function acciones(l) {
+  const botones = [];
+  if (['activo', 'vencido'].includes(l.estado)) {
+    botones.push(`<button class="btn btn-sinu sm" type="button" data-merma="${l.id}">Merma</button>`);
   }
-  return `<div class="tabla-wrap"><table>
-    <thead><tr><th>Lote</th><th>Insumo</th><th class="num">Actual / Inicial</th><th>Ingreso</th><th>Vence</th><th>Estado</th><th></th></tr></thead>
-    <tbody>${lotes
-      .map((l) => {
-        const [texto, tono] = TAG_LOTE[l.estado];
-        return `<tr>
-          <td>${l.codigo}</td><td><b>${escapeHtml(l.insumo)}</b></td>
-          <td class="num"><b>${formatNumber(l.cantidad_actual)}</b> / ${formatNumber(l.cantidad_inicial)} ${l.unidad}</td>
-          <td>${formatDate(l.fecha_ingreso)}</td>
-          <td>${formatDate(l.fecha_vencimiento)}<br /><small>${l.estado === 'activo' ? textoDias(l.dias_para_vencer) : ''}</small></td>
-          <td>${tag(texto, tono)}</td>
-          <td><div class="acciones">
-            <button class="btn btn-sinu sm" type="button" disabled title="${PROXIMAMENTE}">Ajustar</button>
-            <button class="btn btn-sinu sm" type="button" disabled title="${PROXIMAMENTE}">Merma</button>
-          </div></td></tr>`;
-      })
-      .join('')}</tbody></table></div>`;
+  if (l.estado === 'vencido') {
+    botones.push(`<button class="btn btn-sinu sm peligro" type="button" data-baja="${l.id}">Dar de baja</button>`);
+  }
+  return `<div class="acciones">${botones.join('')}</div>`;
 }
+
+export const COLUMNAS_LOTE = [
+  { titulo: 'Lote', render: (l) => l.codigo },
+  { titulo: 'Insumo', render: (l) => `<b>${escapeHtml(l.insumo)}</b>` },
+  { titulo: 'Actual / Inicial', clase: 'num', render: (l) => `<b>${formatNumber(l.cantidad_actual)}</b> / ${formatNumber(l.cantidad_inicial)} ${l.unidad}` },
+  { titulo: 'Ingreso', render: (l) => formatDate(l.fecha_ingreso) },
+  { titulo: 'Vence', render: (l) => `${formatDate(l.fecha_vencimiento)}<br /><small>${l.estado === 'activo' ? textoDias(l.dias_para_vencer) : ''}</small>` },
+  { titulo: 'Estado', render: (l) => tag(...TAG_LOTE[l.estado]) },
+  { titulo: '', render: acciones },
+];
 
 export function LotesPage() {
   return `<section class="contenedor" id="lotesRoot">${loading('Cargando lotes…')}</section>`;
@@ -70,17 +69,19 @@ export function LotesPage() {
 export function mountLotesPage({ refreshAlertCount } = {}) {
   const root = document.querySelector('#lotesRoot');
   let verTodos = false;
+  let lotes = [];
 
   async function cargar() {
     try {
-      const [insumos, lotes] = await Promise.all([getInsumos(), getLotes({ todos: verTodos })]);
+      const [insumos, respLotes] = await Promise.all([getInsumos(), getLotes({ todos: verTodos })]);
+      lotes = respLotes.data;
       root.innerHTML = `
         <div class="cabecera-vista"><h2>Lotes</h2></div>
         <div class="tarjeta">${Formulario(insumos.data)}</div>
         <div class="tarjeta">
           <div class="cabecera-vista"><h3>Lotes (orden FEFO)</h3>
             <button class="btn btn-sinu sm" type="button" id="btnVerTodos">${verTodos ? 'Solo con existencias' : 'Ver todos'}</button></div>
-          ${Tabla(lotes.data)}
+          ${Tabla({ columnas: COLUMNAS_LOTE, filas: lotes, vacio: 'No hay lotes con existencias.' })}
         </div>
       `;
     } catch (error) {
@@ -89,33 +90,58 @@ export function mountLotesPage({ refreshAlertCount } = {}) {
     }
   }
 
+  const recargar = async () => {
+    await cargar();
+    refreshAlertCount?.();
+  };
+
   root.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const insumoId = document.querySelector('#loIns').value;
-    const error = document.querySelector('#loError');
-    if (!insumoId) {
-      error.textContent = 'Seleccione un insumo válido.';
+    const form = event.target;
+    const valores = leerFormulario(form);
+    const errores = validar(valores, esquemaLote(todayIso()));
+    if (!esValido(errores)) {
+      mostrarErrores(form, errores);
       return;
     }
     try {
       await createLote({
-        insumo_id: Number(insumoId),
-        cantidad: Number(document.querySelector('#loCant').value),
-        fecha_ingreso: document.querySelector('#loIng').value,
-        fecha_vencimiento: document.querySelector('#loVen').value,
+        insumo_id: Number(valores.insumo_id),
+        cantidad: Number(valores.cantidad),
+        fecha_ingreso: valores.fecha_ingreso,
+        fecha_vencimiento: valores.fecha_vencimiento,
       });
       toast('Lote registrado.', 'ok');
-      await cargar();
-      refreshAlertCount?.();
+      await recargar();
     } catch (apiError) {
-      error.textContent = showApiError(apiError);
+      mostrarErrorApi(form, apiError);
     }
   });
 
-  root.addEventListener('click', (event) => {
+  root.addEventListener('click', async (event) => {
+    const merma = event.target.closest('[data-merma]');
+    const baja = event.target.closest('[data-baja]');
     if (event.target.closest('#btnVerTodos')) {
       verTodos = !verTodos;
       cargar();
+    } else if (merma) {
+      abrirMermaModal(lotes.find((l) => l.id === Number(merma.dataset.merma)), recargar);
+    } else if (baja) {
+      const lote = lotes.find((l) => l.id === Number(baja.dataset.baja));
+      const ok = await confirmar(
+        `Dar de baja ${lote.codigo}`,
+        `Se descontarán <b>${formatNumber(lote.cantidad_actual)} ${lote.unidad}</b> de ${escapeHtml(lote.insumo)} (vencido) y quedará en el historial de mermas.`,
+        'Dar de baja',
+        true,
+      );
+      if (ok) {
+        try {
+          toast((await darDeBajaLote(lote.id)).message, 'ok');
+          await recargar();
+        } catch (error) {
+          showApiError(error);
+        }
+      }
     }
   });
 

@@ -14,13 +14,14 @@ import {
   PanelPedidoTitulo,
   ResultadoValidacion,
 } from '../components/mesas/PanelPedido.js';
+import { actions, getState } from '../state/store.js';
 import { formatCurrency } from '../utils/formatters.js';
 import { confirmar, loading, showApiError, toast } from '../utils/ui.js';
 
 const REFRESCO_MS = 15000;
 
-// Borradores de pedido por mesa: sobreviven al cambiar de vista (como en SINU)
-const carritos = {};
+// Los borradores de pedido por mesa viven en el store (state/store.js → carritos):
+// sobreviven al cambiar de vista y se borran al cerrar sesión.
 
 export function MesasPage() {
   return `
@@ -51,10 +52,12 @@ export function mountMesasPage({ refreshAlertCount } = {}) {
   let abierta = null;
   let ocupado = false;
 
-  const carrito = () => (carritos[abierta] ??= []);
+  const carrito = () => getState().carritos[abierta] ?? [];
+  const guardarCarrito = (items) => actions.setCarrito(abierta, items);
   const mesaAbierta = () => mesas.find((m) => m.numero === abierta);
 
   function pintarMapa() {
+    const { carritos } = getState();
     const borradores = Object.keys(carritos).filter((n) => carritos[n].length);
     contenido.innerHTML = MapaMesas(mesas, { abierta, borradores });
   }
@@ -65,7 +68,7 @@ export function mountMesasPage({ refreshAlertCount } = {}) {
       return;
     }
     // Quita del borrador platos que ya no existen o se desactivaron
-    carritos[abierta] = carrito().filter((c) => menu.some((d) => d.plato.id === c.plato_id));
+    guardarCarrito(carrito().filter((c) => menu.some((d) => d.plato.id === c.plato_id)));
     const precio = (id) => menu.find((d) => d.plato.id === id).plato.precio;
     const total = carrito().reduce((s, c) => s + precio(c.plato_id) * c.cantidad, 0);
 
@@ -127,25 +130,23 @@ export function mountMesasPage({ refreshAlertCount } = {}) {
   }
 
   function cambiarCantidad(platoId, delta) {
-    const items = carrito();
-    const item = items.find((c) => c.plato_id === platoId);
+    const actual = carrito().find((c) => c.plato_id === platoId)?.cantidad ?? 0;
+    const nueva = actual + delta;
     if (delta > 0) {
       const posibles = menu.find((d) => d.plato.id === platoId)?.posibles ?? 0;
-      if ((item?.cantidad ?? 0) + 1 > posibles) {
+      if (nueva > posibles) {
         toast(`Solo se pueden preparar ${posibles} de este plato.`, 'warn');
         return;
       }
-      if (item) {
-        item.cantidad += 1;
-      } else {
-        items.push({ plato_id: platoId, cantidad: 1 });
-      }
-    } else if (item) {
-      item.cantidad -= 1;
-      if (item.cantidad <= 0) {
-        items.splice(items.indexOf(item), 1);
-      }
     }
+    const resto = carrito().filter((c) => c.plato_id !== platoId);
+    guardarCarrito(
+      nueva > 0
+        ? actual > 0
+          ? carrito().map((c) => (c.plato_id === platoId ? { ...c, cantidad: nueva } : c))
+          : [...resto, { plato_id: platoId, cantidad: nueva }]
+        : resto,
+    );
     pintarPanel();
   }
 
@@ -182,7 +183,7 @@ export function mountMesasPage({ refreshAlertCount } = {}) {
     }
     const resp = await accion(() => createPedido(numero, items));
     if (resp) {
-      carritos[numero] = [];
+      actions.setCarrito(numero, []);
       cerrar();
     }
   }
@@ -228,7 +229,7 @@ export function mountMesasPage({ refreshAlertCount } = {}) {
       mas: () => cambiarCantidad(id, 1),
       menos: () => cambiarCantidad(id, -1),
       vaciar: () => {
-        carritos[abierta] = [];
+        guardarCarrito([]);
         pintarPanel();
       },
       validar,

@@ -1,6 +1,6 @@
 import { escapeHtml } from './formatters.js';
 
-/* Componentes de interfaz compartidos de SINU: toasts, confirmaciones y etiquetas. */
+/* Utilidades de interfaz compartidas de SINU: toasts, etiquetas y estados vacíos. */
 
 export function toast(message, tone = '') {
   const container = document.querySelector('#toasts');
@@ -15,59 +15,8 @@ export function toast(message, tone = '') {
   setTimeout(() => element.remove(), tone === 'error' ? 4800 : 3000);
 }
 
-export function closeModal() {
-  document.querySelector('#modalRaiz').innerHTML = '';
-}
-
-/**
- * Confirmación antes de acciones destructivas o irreversibles.
- * `messageHtml` puede llevar <b>; todo dato del usuario debe ir escapado.
- */
-export function confirmar(title, messageHtml, okText = 'Confirmar', danger = false) {
-  return new Promise((resolve) => {
-    const root = document.querySelector('#modalRaiz');
-    root.innerHTML = `
-      <div class="modal-fondo">
-        <div class="modal-sinu" role="dialog" aria-modal="true" aria-labelledby="confirmTitulo">
-          <h2 id="confirmTitulo">${escapeHtml(title)}</h2>
-          <p>${messageHtml}</p>
-          <div class="botones">
-            <button class="btn btn-sinu" type="button" data-respuesta="no">Volver</button>
-            <button class="btn btn-sinu ${danger ? 'peligro' : ''}" type="button" data-respuesta="si">${escapeHtml(okText)}</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    root.querySelectorAll('[data-respuesta]').forEach((button) => {
-      button.addEventListener('click', () => {
-        closeModal();
-        resolve(button.dataset.respuesta === 'si');
-      });
-    });
-    root.querySelector('[data-respuesta="si"]').focus();
-  });
-}
-
-/** Ventana informativa que se cierra con el botón, con Escape o al hacer clic fuera. */
-export function showInfoModal(innerHtml, { wide = false } = {}) {
-  const root = document.querySelector('#modalRaiz');
-  root.innerHTML = `
-    <div class="modal-fondo" data-cerrable>
-      <div class="modal-sinu ${wide ? 'ancho' : ''}" role="dialog" aria-modal="true">
-        ${innerHtml}
-        <div class="botones"><button class="btn btn-sinu" type="button" data-cerrar>Cerrar</button></div>
-      </div>
-    </div>
-  `;
-
-  const fondo = root.querySelector('.modal-fondo');
-  fondo.addEventListener('click', (event) => {
-    if (event.target === fondo || event.target.closest('[data-cerrar]')) {
-      closeModal();
-    }
-  });
-}
+// Los modales viven en components/common/Modal.js; se re-exportan para las páginas existentes.
+export { closeModal, confirmar, formModal, showInfoModal } from '../components/common/Modal.js';
 
 export function tag(text, tone) {
   return `<span class="tag tag-${tone}">${escapeHtml(text)}</span>`;
