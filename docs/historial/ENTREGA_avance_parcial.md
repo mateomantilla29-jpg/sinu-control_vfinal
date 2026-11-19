@@ -1,3 +1,5 @@
+> **Documento histórico.** Describe el avance parcial (50 %) del 15 de octubre de 2026. El estado final del proyecto está en el README raíz y en `Informe_Proyecto_Final_SinuControl.html`.
+
 # Entrega · Avance funcional (~50 %) de Sinu Control
 
 **Fecha:** 15 de octubre de 2026
