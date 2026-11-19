@@ -6,7 +6,7 @@ Validación punto por punto después de las fases A a G. La columna "Antes" es e
 |---|---|---|---|
 | Frontend HTML/CSS/JS vanilla, sin React, Angular ni Vue | ✅ | ✅ | `frontend/package.json` solo depende de `bootstrap` y `bootstrap-icons`; Vite y Vitest son herramientas de desarrollo |
 | Bootstrap o Tailwind | ✅ | ✅ | Bootstrap 5.3 en `main.js` |
-| SPA con páginas, componentes y enrutamiento | ✅ (4 componentes) | ✅ | 13 páginas, router con guards y 12 componentes (`components/common`: Campo, Tabla, Kpis, Modal, FiltroFechas; `inventario/MermaModal`…) |
+| SPA con páginas, componentes y enrutamiento | ✅ (4 componentes) | ✅ | 13 páginas, router con guards y 10 archivos de componentes (`components/common`: Campo, Tabla, Kpis, Modal, FiltroFechas; `inventario/MermaModal`…) |
 | Gestión de estado | ⚠️ | ✅ | `state/store.js`: sesión, vista, carritos por mesa y alertas, con acciones y `subscribe`; pruebas en `tests/store.test.js` |
 | Consumo de API con HTTP asíncrono | ✅ | ✅ | `api/http.js` (fetch, Bearer, manejo del 401 con aviso) y un módulo por recurso |
 | Validación de formularios y errores | ⚠️ | ✅ | `utils/validators.js` (mismas reglas que los DTO) y errores por campo en login, insumos, lotes, platos, mermas, usuarios, perfil y reportes; casos CP-01, 06, 09, 11, 14, 16, 18 y 19 |
