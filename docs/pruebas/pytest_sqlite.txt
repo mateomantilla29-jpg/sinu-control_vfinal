@@ -1,0 +1,69 @@
+# Sinu Control · Resultado de pytest (SQLite en memoria)
+# Fecha: 2026-11-19 15:35 · Python 3.13.18
+# Comando: python -m pytest -v
+
+============================= test session starts ==============================
+platform linux -- Python 3.13.18, pytest-9.0.3, pluggy-1.6.0 -- /usr/local/bin/python3
+rootdir: /home/claude/work/sinu-control/api
+configfile: pytest.ini
+testpaths: tests
+plugins: platformdirs-4.13.5, anyio-4.15.1
+collecting ... collected 55 items
+
+tests/test_caja.py::test_resumen_coincide_con_tablero PASSED             [  1%]
+tests/test_caja.py::test_no_cierra_con_pedidos_abiertos_y_luego_si PASSED [  3%]
+tests/test_caja.py::test_caja_valida_fecha_y_observacion PASSED          [  5%]
+tests/test_caja.py::test_mesero_no_cierra_caja PASSED                    [  7%]
+tests/test_mermas.py::test_merma_parcial_baja_stock_y_queda_en_historial PASSED [  9%]
+tests/test_mermas.py::test_merma_mayor_que_el_lote_es_conflicto PASSED   [ 10%]
+tests/test_mermas.py::test_merma_valida_cantidad_y_motivo PASSED         [ 12%]
+tests/test_mermas.py::test_mesero_no_registra_mermas PASSED              [ 14%]
+tests/test_mermas.py::test_baja_solo_para_lotes_vencidos PASSED          [ 16%]
+tests/test_mermas.py::test_baja_masiva_de_vencidos PASSED                [ 18%]
+tests/test_perfil_sesion.py::test_cambiar_contrasena_y_entrar_con_la_nueva PASSED [ 20%]
+tests/test_perfil_sesion.py::test_contrasena_actual_incorrecta PASSED    [ 21%]
+tests/test_perfil_sesion.py::test_confirmacion_distinta_y_nueva_corta PASSED [ 23%]
+tests/test_perfil_sesion.py::test_cambiar_contrasena_sin_token PASSED    [ 25%]
+tests/test_perfil_sesion.py::test_actualizar_mi_nombre PASSED            [ 27%]
+tests/test_perfil_sesion.py::test_renovar_token_entrega_uno_nuevo_valido PASSED [ 29%]
+tests/test_perfil_sesion.py::test_token_expirado_responde_401_con_mensaje PASSED [ 30%]
+tests/test_reportes.py::test_mas_vendidos_excluye_cancelados PASSED      [ 32%]
+tests/test_reportes.py::test_consumo_neto_descuenta_devoluciones PASSED  [ 34%]
+tests/test_reportes.py::test_movimientos_filtra_por_tipo_y_fecha PASSED  [ 36%]
+tests/test_reportes.py::test_filtros_invalidos_devuelven_400 PASSED      [ 38%]
+tests/test_reportes.py::test_mesero_no_ve_reportes PASSED                [ 40%]
+tests/test_sinu.py::test_login_devuelve_token_y_rol PASSED               [ 41%]
+tests/test_sinu.py::test_login_invalido PASSED                           [ 43%]
+tests/test_sinu.py::test_mesero_no_accede_a_inventario PASSED            [ 45%]
+tests/test_sinu.py::test_sin_token PASSED                                [ 47%]
+tests/test_sinu.py::test_stock_excluye_lotes_vencidos PASSED             [ 49%]
+tests/test_sinu.py::test_crud_insumo PASSED                              [ 50%]
+tests/test_sinu.py::test_no_elimina_insumo_en_receta PASSED              [ 52%]
+tests/test_sinu.py::test_pedido_consume_fefo_y_cancelar_devuelve PASSED  [ 54%]
+tests/test_sinu.py::test_pedido_sin_stock_es_rechazado PASSED            [ 56%]
+tests/test_sinu.py::test_flujo_estados_y_alerta PASSED                   [ 58%]
+tests/test_usuarios.py::test_admin_crea_usuario_y_este_inicia_sesion PASSED [ 60%]
+tests/test_usuarios.py::test_crear_usuario_valida_cada_campo PASSED      [ 61%]
+tests/test_usuarios.py::test_usuario_duplicado_es_conflicto PASSED       [ 63%]
+tests/test_usuarios.py::test_mesero_no_gestiona_usuarios PASSED          [ 65%]
+tests/test_usuarios.py::test_admin_edita_nombre_rol_y_restablece_contrasena PASSED [ 67%]
+tests/test_usuarios.py::test_desactivar_bloquea_login_y_token_abierto PASSED [ 69%]
+tests/test_usuarios.py::test_nadie_se_desactiva_ni_cambia_su_rol PASSED  [ 70%]
+tests/test_usuarios.py::test_estado_requiere_booleano_y_usuario_existente PASSED [ 72%]
+tests/test_validaciones.py::test_cuerpo_invalido_devuelve_400_con_detalle[post-/insumos-cuerpo0-campos0] PASSED [ 74%]
+tests/test_validaciones.py::test_cuerpo_invalido_devuelve_400_con_detalle[put-/insumos/1-cuerpo1-campos1] PASSED [ 76%]
+tests/test_validaciones.py::test_cuerpo_invalido_devuelve_400_con_detalle[post-/lotes-cuerpo2-campos2] PASSED [ 78%]
+tests/test_validaciones.py::test_cuerpo_invalido_devuelve_400_con_detalle[post-/lotes-cuerpo3-campos3] PASSED [ 80%]
+tests/test_validaciones.py::test_cuerpo_invalido_devuelve_400_con_detalle[post-/platos-cuerpo4-campos4] PASSED [ 81%]
+tests/test_validaciones.py::test_cuerpo_invalido_devuelve_400_con_detalle[post-/platos-cuerpo5-campos5] PASSED [ 83%]
+tests/test_validaciones.py::test_cuerpo_invalido_devuelve_400_con_detalle[post-/pedidos-cuerpo6-campos6] PASSED [ 85%]
+tests/test_validaciones.py::test_cuerpo_invalido_devuelve_400_con_detalle[post-/pedidos/validar-cuerpo7-campos7] PASSED [ 87%]
+tests/test_validaciones.py::test_cuerpo_invalido_devuelve_400_con_detalle[post-/usuarios-cuerpo8-campos8] PASSED [ 89%]
+tests/test_validaciones.py::test_cuerpo_invalido_devuelve_400_con_detalle[post-/lotes/1/merma-cuerpo9-campos9] PASSED [ 90%]
+tests/test_validaciones.py::test_cuerpo_invalido_devuelve_400_con_detalle[post-/caja/cierres-cuerpo10-campos10] PASSED [ 92%]
+tests/test_validaciones.py::test_cuerpo_invalido_devuelve_400_con_detalle[post-/insumos-cuerpo11-campos11] PASSED [ 94%]
+tests/test_validaciones.py::test_cuerpo_que_no_es_objeto PASSED          [ 96%]
+tests/test_validaciones.py::test_query_de_alertas_validada PASSED        [ 98%]
+tests/test_validaciones.py::test_metodo_no_permitido_responde_json PASSED [100%]
+
+============================= 55 passed in 16.06s ==============================

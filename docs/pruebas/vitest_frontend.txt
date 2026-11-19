@@ -1,0 +1,24 @@
+# Sinu Control · Pruebas del frontend (Vitest)
+# Fecha: 2026-11-19 15:36 · Node v22.23.5
+# Comando: npm test
+
+
+ RUN  v3.2.7 /home/claude/work/sinu-control/frontend
+
+ ✓ tests/validators.test.js > validación de formularios (coherente con los DTO) > insumo: nombre obligatorio y stock mínimo no negativo 1ms
+ ✓ tests/validators.test.js > validación de formularios (coherente con los DTO) > lote: cantidad > 0, ingreso no futuro y vencimiento no anterior al ingreso 0ms
+ ✓ tests/validators.test.js > validación de formularios (coherente con los DTO) > usuario nuevo: patrón del usuario de acceso y contraseña mínima 0ms
+ ✓ tests/validators.test.js > validación de formularios (coherente con los DTO) > contraseña: confirmación igual y nueva distinta de la actual 0ms
+ ✓ tests/validators.test.js > validación de formularios (coherente con los DTO) > merma: no supera lo que queda en el lote 0ms
+ ✓ tests/validators.test.js > validación de formularios (coherente con los DTO) > filtro de fechas: la final no puede ser anterior a la inicial 0ms
+ ✓ tests/store.test.js > store (gestión de estado) > iniciar y cerrar sesión persiste y limpia el token 1ms
+ ✓ tests/store.test.js > store (gestión de estado) > los carritos por mesa se borran al cerrar sesión 1ms
+ ✓ tests/store.test.js > store (gestión de estado) > subscribe con selector solo avisa cuando cambia ese valor 2ms
+ ✓ tests/jwt.test.js > expiración del JWT (aviso de sesión) > lee exp en milisegundos 1ms
+ ✓ tests/jwt.test.js > expiración del JWT (aviso de sesión) > calcula el tiempo restante y tolera tokens ilegibles 0ms
+
+ Test Files  3 passed (3)
+      Tests  11 passed (11)
+   Start at  15:36:59
+   Duration  567ms (transform 48ms, setup 16ms, collect 53ms, tests 12ms, environment 0ms, prepare 137ms)
+

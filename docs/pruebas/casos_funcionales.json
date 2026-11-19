@@ -1,0 +1,195 @@
+{
+  "fecha": "2026-11-19 15:39",
+  "casos": [
+    {
+      "codigo": "CP-01",
+      "nombre": "Login sin datos",
+      "entrada": "Usuario y contraseña vacíos",
+      "esperado": "Error en cada campo sin llamar a la API",
+      "obtenido": "{'usuario': 'Escriba su usuario.', 'contrasena': 'Escriba su contraseña.'}; llamadas a la API: 0",
+      "resultado": "Cumple",
+      "captura": "docs/capturas/final/01-login-validacion.png"
+    },
+    {
+      "codigo": "CP-02",
+      "nombre": "Login con contraseña incorrecta",
+      "entrada": "admin / contraseña errada",
+      "esperado": "Mensaje 'Usuario o contraseña incorrectos.' (401)",
+      "obtenido": "Usuario o contraseña incorrectos.",
+      "resultado": "Cumple",
+      "captura": null
+    },
+    {
+      "codigo": "CP-03",
+      "nombre": "Login del mesero",
+      "entrada": "mesero / contraseña de prueba",
+      "esperado": "Entra al mapa con 9 mesas",
+      "obtenido": "Vista #mesas con 9 mesas",
+      "resultado": "Cumple",
+      "captura": "docs/capturas/final/02-mesero-mesas.png"
+    },
+    {
+      "codigo": "CP-04",
+      "nombre": "Crear pedido",
+      "entrada": "Mesa 3: 2 × Mojarra frita con patacón",
+      "esperado": "Pedido enviado a cocina y mesa 3 ocupada",
+      "obtenido": "'Pedido PED-1 enviado a cocina.'; mesa 3: Ocupada",
+      "resultado": "Cumple",
+      "captura": "docs/capturas/final/04-pedido-mesa3.png"
+    },
+    {
+      "codigo": "CP-05",
+      "nombre": "Mesero abre una vista de administrador",
+      "entrada": "URL #tablero con sesión de mesero",
+      "esperado": "Mensaje de permisos insuficientes",
+      "obtenido": "No tiene permisos para ver esta sección",
+      "resultado": "Cumple",
+      "captura": null
+    },
+    {
+      "codigo": "CP-06",
+      "nombre": "Cambiar contraseña",
+      "entrada": "Nueva '123' y confirmación distinta; luego una válida",
+      "esperado": "Errores por campo; con datos válidos se cambia y el login funciona con la nueva",
+      "obtenido": "Errores: ['confirmacion', 'nueva']; 'Contraseña actualizada. Úsela en su próximo ingreso.'; login con la nueva: sí",
+      "resultado": "Cumple",
+      "captura": null
+    },
+    {
+      "codigo": "CP-07",
+      "nombre": "Avanzar pedido en cocina",
+      "entrada": "Tres clics sobre el ticket PED-1",
+      "esperado": "pendiente → en preparación → listo → entregado",
+      "obtenido": "En preparación → Listo → Entregado",
+      "resultado": "Cumple",
+      "captura": null
+    },
+    {
+      "codigo": "CP-08",
+      "nombre": "FEFO en lotes",
+      "entrada": "Pedido de 2 Mojarras (0,5 kg de pescado c/u)",
+      "esperado": "Se descuenta 1 kg del lote de pescado que vence primero",
+      "obtenido": "L-1 3 / 4 kg | L-2 8 / 8 kg",
+      "resultado": "Cumple",
+      "captura": "docs/capturas/final/08-lotes-fefo.png"
+    },
+    {
+      "codigo": "CP-09",
+      "nombre": "Merma inválida",
+      "entrada": "Cantidad 999 (el lote tiene 20 kg) y motivo 'x'",
+      "esperado": "Errores por campo sin llamar a la API",
+      "obtenido": "{'cantidad': 'No puede superar lo que queda en el lote (20).', 'motivo': 'Describa el motivo (3 a 200 caracteres).'}; llamadas: 0",
+      "resultado": "Cumple",
+      "captura": "docs/capturas/final/09-merma-validacion.png"
+    },
+    {
+      "codigo": "CP-10",
+      "nombre": "Registrar merma",
+      "entrada": "Lote de Arroz: 1,5 kg, motivo 'Bolsa rota en bodega'",
+      "esperado": "El lote baja a 18,5 kg y queda el movimiento",
+      "obtenido": "'Merma registrada en el lote L-7.'; lote: 18,5 / 20 kg",
+      "resultado": "Cumple",
+      "captura": null
+    },
+    {
+      "codigo": "CP-11",
+      "nombre": "Lote con vencimiento anterior al ingreso",
+      "entrada": "Vencimiento 2020-01-01",
+      "esperado": "Error en el campo de vencimiento",
+      "obtenido": "{'fecha_vencimiento': 'El vencimiento no puede ser anterior al ingreso.'}",
+      "resultado": "Cumple",
+      "captura": null
+    },
+    {
+      "codigo": "CP-12",
+      "nombre": "Baja de lotes vencidos",
+      "entrada": "Botón 'Dar de baja todos'",
+      "esperado": "2 lotes dados de baja y 3 mermas en el historial",
+      "obtenido": "'2 lote(s) vencido(s) dado(s) de baja.'; filas en historial: 3",
+      "resultado": "Cumple",
+      "captura": "docs/capturas/final/11-mermas-historial.png"
+    },
+    {
+      "codigo": "CP-13",
+      "nombre": "Reporte de más vendidos",
+      "entrada": "Últimos 7 días",
+      "esperado": "Mojarra: 2 unidades, $ 70.000",
+      "obtenido": "1 | Mojarra frita con patacón | 2 | 1 | $ 70.000",
+      "resultado": "Cumple",
+      "captura": "docs/capturas/final/12-reportes.png"
+    },
+    {
+      "codigo": "CP-14",
+      "nombre": "Reporte con fechas invertidas",
+      "entrada": "Desde 31/12/2026, hasta 01/01/2026",
+      "esperado": "Error en 'hasta' sin consultar",
+      "obtenido": "{'hasta': 'La fecha final no puede ser anterior a la inicial.'}",
+      "resultado": "Cumple",
+      "captura": null
+    },
+    {
+      "codigo": "CP-15",
+      "nombre": "Cierre de caja",
+      "entrada": "Cerrar la caja del día",
+      "esperado": "El total coincide con 'Ventas de hoy' del tablero y se registra el cierre",
+      "obtenido": "Tablero $ 70.000 · Caja $ 70.000; 'Caja del 2026-11-19 cerrada.'",
+      "resultado": "Cumple",
+      "captura": "docs/capturas/final/14-caja-cerrada.png"
+    },
+    {
+      "codigo": "CP-16",
+      "nombre": "Crear usuario",
+      "entrada": "Primero datos inválidos; luego ana.perez / Ana Pérez / Mesero",
+      "esperado": "Errores por campo; luego el usuario aparece activo",
+      "obtenido": "Errores: ['contrasena', 'nombre', 'usuario']; 'Usuario ana.perez creado.'",
+      "resultado": "Cumple",
+      "captura": null
+    },
+    {
+      "codigo": "CP-17",
+      "nombre": "Usuario desactivado",
+      "entrada": "Ingresar como ana.perez después de desactivarla",
+      "esperado": "Login rechazado con mensaje claro",
+      "obtenido": "Usuario desactivado. Consulte al administrador.",
+      "resultado": "Cumple",
+      "captura": null
+    },
+    {
+      "codigo": "CP-18",
+      "nombre": "Insumo inválido",
+      "entrada": "Nombre vacío y stock mínimo -2",
+      "esperado": "Errores por campo",
+      "obtenido": "{'nombre': 'Escriba el nombre del insumo.', 'stock_minimo': 'Debe ser mayor o igual a 0.'}",
+      "resultado": "Cumple",
+      "captura": "docs/capturas/final/17-inventario-validacion.png"
+    },
+    {
+      "codigo": "CP-19",
+      "nombre": "Plato sin receta",
+      "entrada": "Formulario vacío",
+      "esperado": "Errores en nombre, precio y receta",
+      "obtenido": "{'nombre': 'Escriba el nombre del plato.', 'precio': 'Indique el precio.', 'receta': 'La receta debe tener al menos un insumo.'}",
+      "resultado": "Cumple",
+      "captura": "docs/capturas/final/18-platos-validacion.png"
+    },
+    {
+      "codigo": "CP-20",
+      "nombre": "Aviso de expiración y renovación",
+      "entrada": "Token al que le quedan 4 minutos",
+      "esperado": "Aviso con 'Renovar sesión'; al renovar el aviso desaparece",
+      "obtenido": "'⏳ Su sesión vence en 4 min. Renuévela para no perder lo que está haciendo.'; visible tras renovar: False",
+      "resultado": "Cumple",
+      "captura": "docs/capturas/final/19-aviso-sesion.png"
+    },
+    {
+      "codigo": "CP-21",
+      "nombre": "Sesión expirada",
+      "entrada": "Token vencido al recargar",
+      "esperado": "Vuelve al login con un aviso explicativo",
+      "obtenido": "⏳ Su sesión expiró. Ingrese de nuevo para continuar.",
+      "resultado": "Cumple",
+      "captura": "docs/capturas/final/20-sesion-expirada.png"
+    }
+  ],
+  "errores_consola": []
+}

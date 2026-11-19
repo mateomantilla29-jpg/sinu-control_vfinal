@@ -61,10 +61,13 @@ export function mostrarErrores(form, errores = {}) {
     const mensaje = aplanar(valor).join(' ');
     const control = form.querySelector(`[name="${campo}"]`);
     const destino = form.querySelector(`[data-error-de="${campo}"]`);
-    if (control && destino) {
-      control.classList.add('is-invalid');
+    if (destino) {
+      // Campos compuestos (p. ej. la receta) tienen zona de error pero no un único control
       destino.textContent = mensaje;
-      primero ??= control;
+      if (control) {
+        control.classList.add('is-invalid');
+        primero ??= control;
+      }
     } else {
       sueltos.push(mensaje);
     }
