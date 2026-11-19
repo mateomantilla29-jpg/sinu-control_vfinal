@@ -1,11 +1,13 @@
 # Preguntas probables de sustentación (G4)
 
+Equipo: Erick Alexander Agudelo Jordan y Mateo Mantilla Ramos. Ambos deben poder responder todas las preguntas.
+
 Respuestas cortas, con el archivo donde se puede mostrar cada una.
 
 ## Arquitectura
 
 **1. ¿Qué estilo de arquitectura usaron y por qué no microservicios?**
-Un monolito modular en capas. Un solo local, un equipo de cómputo y tres desarrolladores. Además, FEFO necesita una transacción que toca pedidos y lotes a la vez; con microservicios habría que usar sagas. Los dominios están separados, así que se podría extraer uno después (ADR-02).
+Un monolito modular en capas. Un solo local, un equipo de cómputo y dos desarrolladores. Además, FEFO necesita una transacción que toca pedidos y lotes a la vez; con microservicios habría que usar sagas. Los dominios están separados, así que se podría extraer uno después (ADR-02).
 
 **2. ¿Qué hace cada capa?**
 El controlador recibe HTTP, valida el DTO y el rol y responde. El servicio aplica las reglas de negocio y maneja la transacción. El repositorio hace las consultas con SQLAlchemy. El modelo representa la tabla. Ejemplo: `pedidos/controladores.py → PedidoServicio.crear → PedidoRepositorio → Pedido`.

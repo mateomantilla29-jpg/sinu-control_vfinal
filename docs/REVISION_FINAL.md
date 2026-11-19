@@ -17,7 +17,7 @@ Validación punto por punto después de las fases A a G. La columna "Antes" es e
 | Base de datos MySQL o PostgreSQL | ❌ (SQLite) | ✅ | MySQL obligatorio en `config.py`; SQLite solo en pruebas; guion `docs/GUION_SQL_VIDEO.sql` |
 | ORM y migraciones | ✅ (sin probar en MySQL) | ✅ | 3 migraciones; `flask db upgrade`, `downgrade` y `seed.py` probados en un servidor compatible con MySQL |
 | Pruebas de funcionamiento | ⚠️ (10, sin frontend) | ✅ | 55 pytest (SQLite y MySQL), 11 Vitest y 21 casos funcionales en navegador; resultados en `docs/pruebas/` |
-| Control de versiones | ❌ (sin .git) | ✅ | Repositorio Git con commits por fase; pasos para GitHub y acceso de lectura en `docs/GITHUB.md` |
+| Control de versiones | ❌ (sin .git) | ✅ | Repositorio Git con commits por fase, publicado en https://github.com/erickjordan0921-creator/sinu-control |
 | Instrucciones de instalación | ⚠️ | ✅ | README reescrito; instalación probada desde un clon limpio |
 | Informe HTML `Informe_Proyecto_Final_SinuControl.html` | ❌ | ✅ | En la raíz del repositorio; autocontenido |
 | Fases 01 a 05 documentadas | ❌ | ✅ | Informe, secciones 1, 2, 3, 12 y 13 |
@@ -25,14 +25,15 @@ Validación punto por punto después de las fases A a G. La columna "Antes" es e
 | UML, arquitectura lógica, despliegue, modelo lógico y físico de la BD | ❌ | ✅ | Informe, secciones 6 a 8 (casos de uso, clases, 2 secuencias, 2 de estados, capas, 2 despliegues, ER y DDL) |
 | Diseño de API, diseño de seguridad y ADR | ❌ | ✅ | Informe, secciones 9 y 10 (10 ADR) |
 | Atributos de calidad, rendimiento, escalabilidad, costos y riesgos | ❌ | ✅ | Informe, secciones 4.3 y 11, con tiempos medidos |
-| Video MP4 | ❌ | ⏳ Pendiente del equipo | Guion cronometrado en `docs/GUION_VIDEO.md` |
+| Video MP4 | ❌ | ⏳ Pendiente de grabación | `Video_Proyecto_Final_SinuControl.mp4`; guion en `docs/GUION_VIDEO.md` |
 | Funcionalidades completas | ⚠️ ("Próximamente") | ✅ | Reportes, cierre de caja, mermas y bajas, perfil y contraseña, usuarios y renovación de sesión; "Respaldo" y "Ajustar" se eliminaron |
 | No exponer credenciales | ⚠️ (`.env` en el zip) | ✅ | Sin `.env` en el repositorio ni en el zip; las contraseñas de prueba solo en el README, con aviso de no mostrarlas en el video |
 
-## Lo que todavía debe hacer el equipo
+## Estado de la entrega
 
-1. **Completar los datos resaltados en amarillo** en la portada del informe: integrantes, docente, enlace del repositorio y del video. Si sus fechas de sprint fueron otras, ajústelas en la sección 3.4.
-2. **Publicar en GitHub** y dar acceso de lectura a rortegani@gmail.com (`docs/GITHUB.md`).
-3. **Repetir las pruebas en su MySQL 8:** `TEST_DATABASE_URL=... python -m pytest`. En el entorno de construcción se usó MariaDB 10.11, que es compatible con MySQL.
-4. **Grabar el video** siguiendo `docs/GUION_VIDEO.md`.
-5. **Cambiar las contraseñas de prueba** si el sistema se instala en el gastrobar.
+1. ✅ **Datos de portada completos** en el informe: integrantes (Erick Alexander Agudelo Jordan y Mateo Mantilla Ramos), firmas, roles Scrum para un equipo de dos y nombre del video. El campo Docente queda en blanco.
+2. ✅ **Repositorio publicado:** https://github.com/erickjordan0921-creator/sinu-control (privado).
+3. ⏳ **Acceso del revisor** rortegani@gmail.com: ver `docs/GITHUB.md`. En un repositorio privado personal el colaborador queda con permiso de escritura.
+4. ⏳ **Repetir las pruebas en su MySQL 8:** `TEST_DATABASE_URL=... python -m pytest`. En el entorno de construcción se usó MariaDB 10.11, que es compatible con MySQL.
+5. ⏳ **Video pendiente de grabación:** `Video_Proyecto_Final_SinuControl.mp4`, siguiendo `docs/GUION_VIDEO.md`.
+6. **Cambiar las contraseñas de prueba** si el sistema se instala en el gastrobar.
