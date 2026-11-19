@@ -10,52 +10,60 @@ load_dotenv()
 _BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
+def _entero(nombre, defecto):
+    valor = os.getenv(nombre, str(defecto)).strip()
+    return int(valor) if valor.isdigit() else defecto
+
+
+def url_mysql():
+    """URL de conexion a MySQL 8 construida con las variables DB_* del .env."""
+    usuario = os.getenv("DB_USER", "").strip()
+    clave = os.getenv("DB_PASSWORD", "").strip()
+    host = os.getenv("DB_HOST", "localhost").strip()
+    puerto = os.getenv("DB_PORT", "3306").strip()
+    nombre = os.getenv("DB_NAME", "sinu_db").strip()
+    charset = os.getenv("DB_CHARSET", "utf8mb4").strip()
+    return f"mysql+pymysql://{usuario}:{clave}@{host}:{puerto}/{nombre}?charset={charset}"
+
+
 class Config:
-    """Configuracion central de la aplicacion."""
+    """Configuracion central de la aplicacion.
+
+    - Desarrollo y produccion: MySQL 8 (obligatorio, variables DB_* en .env).
+    - Pruebas (FLASK_TESTING=true): SQLite en memoria, o la base indicada en
+      TEST_DATABASE_URL para correr la misma suite contra MySQL.
+    """
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Reconecta si MySQL cerro la conexion por inactividad (wait_timeout)
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
 
-    # Clave secreta para firmar tokens y sesiones
     SECRET_KEY = os.getenv("SECRET_KEY")
 
-    # Expiracion del token JWT en minutos
-    _jwt_exp = os.getenv("JWT_EXP_MINUTES", "480")
-    JWT_EXP_MINUTES = int(_jwt_exp) if _jwt_exp.isdigit() else 480
+    # Expiracion del token JWT en minutos (un turno de servicio = 8 h)
+    JWT_EXP_MINUTES = _entero("JWT_EXP_MINUTES", 480)
 
     # Dias de anticipacion por defecto para alertas de vencimiento (SINU: 3)
-    _dias = os.getenv("DIAS_ALERTA_DEFECTO", "3")
-    DIAS_ALERTA_DEFECTO = int(_dias) if _dias.isdigit() else 3
+    DIAS_ALERTA_DEFECTO = _entero("DIAS_ALERTA_DEFECTO", 3)
 
-    # ------------------------------------------------------------------
-    # Base de datos: MySQL si hay DB_USER; si no, SQLite local (demo)
-    # ------------------------------------------------------------------
-    _db_user = os.getenv("DB_USER", "").strip()
-    _db_password = os.getenv("DB_PASSWORD", "").strip()
-    _db_host = os.getenv("DB_HOST", "localhost").strip()
-    _db_port = os.getenv("DB_PORT", "3306").strip()
-    _db_name = os.getenv("DB_NAME", "sinu_db").strip()
+    TESTING = os.getenv("FLASK_TESTING", "false").lower() == "true"
 
-    if _db_user:
-        SQLALCHEMY_DATABASE_URI = (
-            f"mysql+pymysql://{_db_user}:{_db_password}@{_db_host}:{_db_port}/{_db_name}"
-        )
+    if TESTING:
+        SQLALCHEMY_DATABASE_URI = os.getenv("TEST_DATABASE_URL", "sqlite:///:memory:")
+        if SQLALCHEMY_DATABASE_URI.startswith("sqlite"):
+            SQLALCHEMY_ENGINE_OPTIONS = {}
+        SECRET_KEY = SECRET_KEY or "test-key-for-pytest"
     else:
-        os.makedirs(os.path.join(_BASE_DIR, "instance"), exist_ok=True)
-        SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(_BASE_DIR, "instance", "sinu.db")
-
-    # ------------------------------------------------------------------
-    # Validaciones obligatorias en desarrollo/produccion
-    # ------------------------------------------------------------------
-    is_testing = os.getenv("FLASK_TESTING", "false").lower() == "true"
-
-    if not is_testing:
         if not SECRET_KEY:
-            raise ValueError("Falta la variable SECRET_KEY en el archivo .env")
-    else:
-        # Valores por defecto para testing
-        SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
-        if not SECRET_KEY:
-            SECRET_KEY = "test-key-for-pytest"
+            raise ValueError(
+                "Falta SECRET_KEY en api/.env. Genérela con: python scripts/generate_secret.py"
+            )
+        if not os.getenv("DB_USER", "").strip():
+            raise ValueError(
+                "Falta DB_USER en api/.env. Sinu Control usa MySQL 8: complete DB_USER, "
+                "DB_PASSWORD, DB_HOST, DB_PORT y DB_NAME (ver .env.example)."
+            )
+        SQLALCHEMY_DATABASE_URI = url_mysql()
 
     # ------------------------------------------------------------------
     # CORS: origenes permitidos
@@ -65,11 +73,8 @@ class Config:
         CORS_ALLOWED_ORIGINS = [o.strip() for o in _origins_env.split(",") if o.strip()]
     else:
         CORS_ALLOWED_ORIGINS = [
-            "http://localhost:3000",
             "http://localhost:5173",
             "http://127.0.0.1:5173",
-            "http://127.0.0.1:5500",
-            "http://localhost:8080",
         ]
 
     BASE_DIR = _BASE_DIR

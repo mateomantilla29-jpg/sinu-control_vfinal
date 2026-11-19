@@ -20,7 +20,7 @@ class Insumo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), unique=True, nullable=False)
     unidad = db.Column(db.String(10), nullable=False)
-    stock_minimo = db.Column(db.Float, nullable=False, default=0)
+    stock_minimo = db.Column(db.Double, nullable=False, default=0)
     # Dias de anticipacion para alertar vencimiento; None = usar el valor por defecto
     dias_alerta = db.Column(db.Integer, nullable=True)
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
@@ -49,8 +49,8 @@ class Lote(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     insumo_id = db.Column(db.Integer, db.ForeignKey("insumos.id"), nullable=False)
-    cantidad_inicial = db.Column(db.Float, nullable=False)
-    cantidad_actual = db.Column(db.Float, nullable=False)
+    cantidad_inicial = db.Column(db.Double, nullable=False)
+    cantidad_actual = db.Column(db.Double, nullable=False)
     fecha_ingreso = db.Column(db.Date, nullable=False)
     fecha_vencimiento = db.Column(db.Date, nullable=False)
     # Dado de baja por merma (el resto de estados se derivan de cantidad y fecha)
@@ -96,7 +96,7 @@ class Movimiento(db.Model):
     # Sin FK: la bitacora se conserva aunque se elimine el insumo
     insumo_id = db.Column(db.Integer, nullable=False)
     lote_id = db.Column(db.Integer, nullable=True)
-    cantidad = db.Column(db.Float, nullable=False)
+    cantidad = db.Column(db.Double, nullable=False)
     fecha = db.Column(db.DateTime, nullable=False)
     usuario = db.Column(db.String(100), nullable=False, default="Sistema")
     nota = db.Column(db.String(255), nullable=False, default="")

@@ -88,4 +88,4 @@ class Consumo(db.Model):
     pedido_id = db.Column(db.Integer, db.ForeignKey("pedidos.id"), nullable=False)
     insumo_id = db.Column(db.Integer, nullable=False)
     lote_id = db.Column(db.Integer, nullable=False)
-    cantidad = db.Column(db.Float, nullable=False)
+    cantidad = db.Column(db.Double, nullable=False)

@@ -16,18 +16,19 @@ os.environ["JWT_EXP_MINUTES"] = "15"
 # ── Imports de la app (ahora usaran la config de testing) ────────────
 import pytest
 
-from app import crear_app
+from app import crear_app, db
 from app.semilla import cargar_datos_ejemplo
 
 
 @pytest.fixture
 def app():
-    """App en modo testing (SQLite en memoria) con los datos de ejemplo de SINU."""
+    """App en modo testing (SQLite en memoria o TEST_DATABASE_URL) con los datos de ejemplo."""
     app = crear_app()
     with app.app_context():
         servicios = app.extensions["sinu_servicios"]
-        cargar_datos_ejemplo(servicios["inventario"], servicios["platos"])
+        cargar_datos_ejemplo(servicios["inventario"], servicios["platos"], recrear_tablas=True)
         yield app
+        db.session.remove()
 
 
 @pytest.fixture

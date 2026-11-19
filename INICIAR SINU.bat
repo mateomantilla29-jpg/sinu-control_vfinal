@@ -14,9 +14,9 @@ if not defined PY where python >nul 2>nul && set "PY=python"
 if not defined PY goto sin_python
 
 rem ---------- API ----------
-echo [1/5] Preparando la API...
+echo [1/6] Preparando la API...
 cd /d "%~dp0api"
-"venv\Scripts\python.exe" -c "import flask, flask_cors, jwt, marshmallow" >nul 2>nul
+"venv\Scripts\python.exe" -c "import flask, flask_cors, jwt, marshmallow, pymysql" >nul 2>nul
 if errorlevel 1 (
   echo       Instalando dependencias de Python (solo la primera vez^)...
   if exist "venv" rmdir /s /q "venv"
@@ -24,23 +24,22 @@ if errorlevel 1 (
   "venv\Scripts\python.exe" -m pip install --disable-pip-version-check -q -r requirements.txt || goto error
 )
 
+echo [2/6] Configuracion (.env)...
 if not exist ".env" copy ".env.example" ".env" >nul
 "venv\Scripts\python.exe" -c "import re,secrets,pathlib;p=pathlib.Path('.env');t=p.read_text(encoding='utf-8');t=re.sub(r'(?m)^SECRET_KEY=\s*$','SECRET_KEY='+secrets.token_hex(32),t);p.write_text(t,encoding='utf-8')" || goto error
+"venv\Scripts\python.exe" -c "import sys,dotenv;sys.exit(0 if (dotenv.dotenv_values('.env').get('DB_USER') or '').strip() else 1)"
+if errorlevel 1 goto sin_mysql
 
-echo [2/5] Base de datos...
-set "NUEVA=0"
-if not exist "instance\sinu.db" set "NUEVA=1"
-"venv\Scripts\python.exe" -m flask --app app:crear_app db upgrade || goto error
-if "%NUEVA%"=="1" (
-  echo       Cargando datos de ejemplo...
-  "venv\Scripts\python.exe" scripts\seed.py --si || goto error
-)
+echo [3/6] Base de datos MySQL...
+"venv\Scripts\python.exe" scripts\create_db.py || goto error_mysql
+"venv\Scripts\python.exe" -m flask --app app:crear_app db upgrade || goto error_mysql
+"venv\Scripts\python.exe" scripts\seed.py --si-vacia || goto error
 
-echo [3/5] Encendiendo la API (puerto 5000)...
+echo [4/6] Encendiendo la API (puerto 5000)...
 start "SINU API" /D "%~dp0api" cmd /k "venv\Scripts\python.exe app.py"
 
 rem ---------- Frontend ----------
-echo [4/5] Encendiendo la aplicacion (puerto 5173)...
+echo [5/6] Encendiendo la aplicacion (puerto 5173)...
 cd /d "%~dp0frontend"
 where node >nul 2>nul || goto sin_node
 if not exist ".env" copy ".env.example" ".env" >nul
@@ -50,7 +49,7 @@ if not exist "node_modules" (
 )
 start "SINU Frontend" /D "%~dp0frontend" cmd /k "npm run dev"
 
-echo [5/5] Esperando a que todo responda...
+echo [6/6] Esperando a que todo responda...
 set /a N=0
 :esperar
 set /a N+=1
@@ -63,13 +62,27 @@ goto esperar
 start "" "http://localhost:5173"
 echo.
 echo  SINU Control listo:  http://localhost:5173
-echo    Administrador:  admin  / admin123
-echo    Mesero:         mesero / mesero123
+echo  Usuarios de prueba: ver README.md (seccion "Usuarios de prueba").
 echo.
 echo  Para apagar: cierre las ventanas "SINU API" y "SINU Frontend".
 echo.
 pause
 exit /b 0
+
+:sin_mysql
+echo.
+echo [FALTA CONFIGURAR MySQL] Abra api\.env y complete DB_USER y DB_PASSWORD
+echo  (usuario de su servidor MySQL 8). Luego vuelva a ejecutar este lanzador.
+start "" notepad "%~dp0api\.env"
+pause
+exit /b 1
+
+:error_mysql
+echo.
+echo [ERROR] No fue posible conectar con MySQL. Verifique que el servicio MySQL 8
+echo  este encendido y que DB_USER / DB_PASSWORD / DB_HOST / DB_PORT de api\.env sean correctos.
+pause
+exit /b 1
 
 :lento
 echo.

@@ -37,7 +37,7 @@ class RecetaItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     plato_id = db.Column(db.Integer, db.ForeignKey("platos.id"), nullable=False)
     insumo_id = db.Column(db.Integer, db.ForeignKey("insumos.id"), nullable=False)
-    cantidad = db.Column(db.Float, nullable=False)
+    cantidad = db.Column(db.Double, nullable=False)
 
     insumo = db.relationship("Insumo", lazy="joined")
 

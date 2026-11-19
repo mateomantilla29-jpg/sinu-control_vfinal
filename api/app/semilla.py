@@ -68,10 +68,27 @@ PLATOS = [
 ]
 
 
-def cargar_datos_ejemplo(inventario, platos):
-    """Borra TODAS las tablas y carga los datos de ejemplo. Usa los servicios publicos."""
-    db.drop_all()
-    db.create_all()
+def vaciar_tablas():
+    """Borra todas las filas respetando las llaves foraneas (hijas primero).
+
+    No elimina tablas: la estructura la controla Alembic (flask db upgrade).
+    """
+    for tabla in reversed(db.metadata.sorted_tables):
+        db.session.execute(tabla.delete())
+    db.session.commit()
+
+
+def cargar_datos_ejemplo(inventario, platos, recrear_tablas=False):
+    """Carga los datos de ejemplo usando los servicios publicos.
+
+    - recrear_tablas=True: drop_all + create_all (solo pruebas, base en memoria).
+    - recrear_tablas=False: vacia las tablas ya migradas (scripts/seed.py en MySQL).
+    """
+    if recrear_tablas:
+        db.drop_all()
+        db.create_all()
+    else:
+        vaciar_tablas()
 
     for usuario, clave, rol, nombre in USUARIOS:
         db.session.add(
