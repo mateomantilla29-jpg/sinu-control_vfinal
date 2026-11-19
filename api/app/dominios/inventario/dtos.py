@@ -29,3 +29,16 @@ class LoteDTO(Schema):
             )
         if datos["fecha_ingreso"] > hoy():
             raise ValidationError("La fecha de ingreso no puede ser futura.", "fecha_ingreso")
+
+
+class MermaDTO(Schema):
+    """Merma parcial de un lote (dano, derrame, mala manipulacion...)."""
+
+    cantidad = fields.Float(
+        required=True,
+        validate=validate.Range(min=0, min_inclusive=False, error="La cantidad debe ser mayor que 0."),
+    )
+    motivo = fields.String(
+        required=True,
+        validate=validate.Length(min=3, max=200, error="Describa el motivo (3 a 200 caracteres)."),
+    )

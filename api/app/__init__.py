@@ -34,6 +34,7 @@ def crear_app():
 
     # Importar modelos para que Flask-Migrate los detecte
     from app.dominios.alertas import modelos as _alertas  # noqa: F401
+    from app.dominios.caja import modelos as _caja  # noqa: F401
     from app.dominios.inventario import modelos as _inventario  # noqa: F401
     from app.dominios.pedidos import modelos as _pedidos  # noqa: F401
     from app.dominios.platos import modelos as _platos  # noqa: F401
@@ -41,9 +42,11 @@ def crear_app():
 
     # Servicios: se crean una sola vez y se inyectan en los controladores
     from app.dominios.alertas.servicios import AlertaServicio
+    from app.dominios.caja.servicios import CajaServicio
     from app.dominios.inventario.servicios import InventarioServicio
     from app.dominios.pedidos.servicios import PedidoServicio
     from app.dominios.platos.servicios import PlatoServicio
+    from app.dominios.reportes.servicios import ReporteServicio
     from app.dominios.tablero.servicios import TableroServicio
     from app.dominios.usuarios.servicios import UsuarioServicio
 
@@ -94,10 +97,26 @@ def crear_app():
     tablero_ctrl.tablero_servicio = tablero
     app.register_blueprint(tablero_ctrl.tablero_bp, url_prefix=f"{prefijo}/tablero")
 
+    # Registrar blueprint de reportes
+    from app.dominios.reportes import controladores as reportes_ctrl
+
+    reportes_ctrl.reporte_servicio = ReporteServicio()
+    app.register_blueprint(reportes_ctrl.reportes_bp, url_prefix=f"{prefijo}/reportes")
+
+    # Registrar blueprint de cierre de caja
+    from app.dominios.caja import controladores as caja_ctrl
+
+    caja_ctrl.caja_servicio = CajaServicio()
+    app.register_blueprint(caja_ctrl.caja_bp, url_prefix=f"{prefijo}/caja")
+
     # Manejadores globales de error
     @app.errorhandler(404)
     def recurso_no_encontrado(error):
         return {"success": False, "error": {"message": "Recurso no encontrado"}}, 404
+
+    @app.errorhandler(405)
+    def metodo_no_permitido(error):
+        return {"success": False, "error": {"message": "Método no permitido."}}, 405
 
     @app.errorhandler(500)
     def error_interno(error):

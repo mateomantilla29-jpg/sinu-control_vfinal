@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 
-from app.dominios.inventario.dtos import InsumoDTO, LoteDTO
+from app.dominios.inventario.dtos import InsumoDTO, LoteDTO, MermaDTO
 from app.dominios.usuarios.repositorios import UsuarioRepositorio
 from app.respuestas import ok, validar
 from app.seguridad import requiere_admin
@@ -64,3 +64,31 @@ def listar_lotes(usuario_id):
 def ingresar_lote(usuario_id):
     lote = inventario_servicio.ingresar_lote(validar(LoteDTO()), _nombre_usuario(usuario_id))
     return ok(lote.to_dict(), "Lote registrado.", 201)
+
+
+# ---------------- Mermas y bajas (solo Administrador) ----------------
+
+
+@inventario_bp.route("/lotes/<int:lote_id>/merma", methods=["POST"])
+@requiere_admin
+def registrar_merma(usuario_id, lote_id):
+    """Merma parcial: descuenta la cantidad indicada y registra un movimiento 'merma'."""
+    datos = validar(MermaDTO())
+    lote = inventario_servicio.registrar_merma(lote_id, datos, _nombre_usuario(usuario_id))
+    return ok(lote.to_dict(), f"Merma registrada en el lote {lote.codigo}.", 201)
+
+
+@inventario_bp.route("/lotes/<int:lote_id>/baja", methods=["POST"])
+@requiere_admin
+def dar_de_baja(usuario_id, lote_id):
+    """Da de baja un lote vencido completo."""
+    lote = inventario_servicio.dar_de_baja(lote_id, _nombre_usuario(usuario_id))
+    return ok(lote.to_dict(), f"Lote {lote.codigo} dado de baja.")
+
+
+@inventario_bp.route("/lotes/vencidos/baja", methods=["POST"])
+@requiere_admin
+def dar_de_baja_vencidos(usuario_id):
+    """Da de baja todos los lotes vencidos con existencias."""
+    resultado = inventario_servicio.dar_de_baja_vencidos(_nombre_usuario(usuario_id))
+    return ok(resultado, f"{resultado['lotes']} lote(s) vencido(s) dado(s) de baja.")

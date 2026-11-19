@@ -1,6 +1,7 @@
 from flask import Blueprint, request
 
-from app.respuestas import ok
+from app.dominios.alertas.dtos import AlertaFiltroDTO
+from app.respuestas import ok, validar
 from app.seguridad import requiere_admin, requiere_rol
 
 alertas_bp = Blueprint("alertas", __name__)
@@ -13,7 +14,7 @@ alerta_servicio = None
 @requiere_rol("admin", "mesero")
 def listar_alertas(usuario_id):
     """Alertas recalculadas al vuelo. ?estado=activa|atendida|todas (por defecto activa)."""
-    filtro = request.args.get("estado", "activa")
+    filtro = validar(AlertaFiltroDTO(), request.args.to_dict())["estado"]
     return ok(alerta_servicio.listar(filtro), "Alertas.")
 
 

@@ -2,7 +2,7 @@ from app import db
 from app.dominios.inventario.modelos import Insumo, Lote, Movimiento
 from app.dominios.inventario.repositorios import InventarioRepositorio
 from app.errores import ConflictoError, NoEncontradoError
-from app.utilidades import ahora, dias_hasta, r3
+from app.utilidades import ahora, dias_hasta, fmt_num, r3
 
 EPS = 1e-9
 
@@ -129,6 +129,64 @@ class InventarioServicio:
                 continue
             lote.cantidad_actual = r3(lote.cantidad_actual + consumo.cantidad)
             self._movimiento("ajuste", consumo.insumo_id, lote.id, consumo.cantidad, nota, usuario)
+
+    # ---------------- Mermas y bajas ----------------
+
+    def obtener_lote(self, lote_id):
+        lote = InventarioRepositorio.obtener_lote(lote_id)
+        if not lote:
+            raise NoEncontradoError(f"Lote con id {lote_id} no encontrado.")
+        return lote
+
+    def registrar_merma(self, lote_id, datos, usuario="Sistema"):
+        """Descuenta una cantidad de un lote con existencias y deja el movimiento 'merma'."""
+        lote = self.obtener_lote(lote_id)
+        if lote.mermado or lote.cantidad_actual <= 0:
+            raise ConflictoError(f"El lote {lote.codigo} no tiene existencias.")
+        cantidad = r3(datos["cantidad"])
+        if cantidad > lote.cantidad_actual + EPS:
+            raise ConflictoError(
+                f"La merma ({fmt_num(cantidad)}) supera lo que queda en el lote {lote.codigo} "
+                f"({fmt_num(lote.cantidad_actual)} {lote.insumo.unidad})."
+            )
+        lote.cantidad_actual = r3(lote.cantidad_actual - cantidad)
+        nota = f"Merma {lote.codigo}: {datos['motivo'].strip()}"
+        self._movimiento("merma", lote.insumo_id, lote.id, -cantidad, nota, usuario)
+        db.session.commit()
+        return lote
+
+    def _baja(self, lote, usuario):
+        cantidad = lote.cantidad_actual
+        lote.cantidad_actual = 0
+        lote.mermado = True
+        nota = f"Baja de lote vencido {lote.codigo}"
+        self._movimiento("merma", lote.insumo_id, lote.id, -cantidad, nota, usuario)
+        return cantidad
+
+    def dar_de_baja(self, lote_id, usuario="Sistema"):
+        """Da de baja TODO lo que queda de un lote vencido (sale del inventario)."""
+        lote = self.obtener_lote(lote_id)
+        if lote.estado != "vencido":
+            raise ConflictoError(
+                f"Solo se dan de baja lotes vencidos. El lote {lote.codigo} está {lote.estado}; "
+                "para descontar parte de él registre una merma."
+            )
+        self._baja(lote, usuario)
+        db.session.commit()
+        return lote
+
+    def dar_de_baja_vencidos(self, usuario="Sistema"):
+        """Da de baja todos los lotes vencidos con existencias en una sola transaccion."""
+        vencidos = [lote for lote in InventarioRepositorio.listar_lotes() if lote.estado == "vencido"]
+        detalle = []
+        for lote in sorted(vencidos, key=orden_fefo):
+            cantidad = self._baja(lote, usuario)
+            detalle.append(
+                {"lote": lote.codigo, "insumo": lote.insumo.nombre, "cantidad": cantidad,
+                 "unidad": lote.insumo.unidad}
+            )
+        db.session.commit()
+        return {"lotes": len(detalle), "detalle": detalle}
 
     def resumen(self):
         """Existencias por insumo con estado ok / bajo / agotado."""

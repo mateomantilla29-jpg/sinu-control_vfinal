@@ -16,7 +16,7 @@ class DatosInvalidosError(ErrorDominio):
     codigo_http = 400
 
     def __init__(self, details):
-        super().__init__("Datos de entrada invalidos.")
+        super().__init__("Datos de entrada inválidos.")
         self.details = details
 
 

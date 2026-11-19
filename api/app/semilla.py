@@ -69,12 +69,20 @@ PLATOS = [
 
 
 def vaciar_tablas():
-    """Borra todas las filas respetando las llaves foraneas (hijas primero).
+    """Borra todas las filas sin eliminar tablas (la estructura la controla Alembic).
 
-    No elimina tablas: la estructura la controla Alembic (flask db upgrade).
+    En MySQL usa TRUNCATE para reiniciar los AUTO_INCREMENT: asi los codigos de la
+    demo (L-1, PED-1...) siempre son los mismos. En SQLite basta con DELETE.
     """
-    for tabla in reversed(db.metadata.sorted_tables):
-        db.session.execute(tabla.delete())
+    tablas = list(reversed(db.metadata.sorted_tables))  # hijas primero
+    if db.engine.dialect.name == "mysql":
+        db.session.execute(db.text("SET FOREIGN_KEY_CHECKS = 0"))
+        for tabla in tablas:
+            db.session.execute(db.text(f"TRUNCATE TABLE `{tabla.name}`"))
+        db.session.execute(db.text("SET FOREIGN_KEY_CHECKS = 1"))
+    else:
+        for tabla in tablas:
+            db.session.execute(tabla.delete())
     db.session.commit()
 
 

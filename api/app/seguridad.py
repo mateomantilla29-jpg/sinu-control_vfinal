@@ -41,21 +41,37 @@ def _extraer_y_validar_token():
         return None, (jsonify({"success": False, "error": {"message": "Token invalido."}}), 401)
 
 
+def _usuario_activo(usuario_id):
+    from app.dominios.usuarios.repositorios import UsuarioRepositorio
+
+    usuario = UsuarioRepositorio.obtener_por_id(usuario_id)
+    return usuario if usuario and usuario.activo else None
+
+
+def _sesion_invalida():
+    return (
+        jsonify({"success": False, "error": {"message": "Usuario desactivado o inexistente."}}),
+        401,
+    )
+
+
 def requiere_token(f):
-    """Decorador que exige un token JWT valido. Inyecta `usuario_id`."""
+    """Decorador que exige un token JWT valido de un usuario activo. Inyecta `usuario_id`."""
 
     @wraps(f)
     def wrapper(*args, **kwargs):
         usuario_id, error = _extraer_y_validar_token()
         if error:
             return error
+        if not _usuario_activo(usuario_id):
+            return _sesion_invalida()
         return f(*args, usuario_id=usuario_id, **kwargs)
 
     return wrapper
 
 
 def requiere_rol(*roles):
-    """Decorador que exige token valido Y que el rol real (en BD) este en `roles`."""
+    """Exige token valido, usuario activo Y que el rol real (en BD) este en `roles`."""
 
     def decorador(f):
         @wraps(f)
@@ -64,10 +80,10 @@ def requiere_rol(*roles):
             if error:
                 return error
 
-            from app.dominios.usuarios.repositorios import UsuarioRepositorio
-
-            usuario = UsuarioRepositorio.obtener_por_id(usuario_id)
-            if not usuario or usuario.rol not in roles:
+            usuario = _usuario_activo(usuario_id)
+            if not usuario:
+                return _sesion_invalida()
+            if usuario.rol not in roles:
                 raise PermisoDenegadoError("Permiso denegado para su rol.")
 
             return f(*args, usuario_id=usuario_id, **kwargs)

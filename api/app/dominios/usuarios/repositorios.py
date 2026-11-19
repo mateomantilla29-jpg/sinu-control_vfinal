@@ -18,3 +18,11 @@ class UsuarioRepositorio:
     @staticmethod
     def obtener_por_id(usuario_id):
         return db.session.get(Usuario, usuario_id)
+
+    @staticmethod
+    def listar():
+        return db.session.query(Usuario).order_by(Usuario.activo.desc(), Usuario.usuario).all()
+
+    @staticmethod
+    def contar_admins_activos():
+        return db.session.query(Usuario).filter_by(rol="admin", activo=True).count()
