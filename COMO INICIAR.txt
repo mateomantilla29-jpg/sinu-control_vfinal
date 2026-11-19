@@ -1,0 +1,16 @@
+SINU CONTROL - Gastrobar Sinu, Bello
+
+REQUISITOS (solo la primera vez):
+  - Python 3.11 o superior (marcar "Add python.exe to PATH")
+  - Node.js LTS
+
+PARA INICIAR:
+  1. Descomprima esta carpeta.
+  2. Doble clic en "INICIAR SINU.bat" (la primera vez tarda 1-3 minutos).
+  3. Se abre http://localhost:5173
+
+USUARIOS:
+  Administrador:  admin  / admin123
+  Mesero:         mesero / mesero123
+
+PARA APAGAR: cierre las ventanas "SINU API" y "SINU Frontend".
