@@ -36,7 +36,10 @@ function Formulario(insumos) {
         ${Campo({ name: 'fecha_vencimiento', label: 'Fecha de vencimiento', type: 'date', attrs: `min="${hoy}"`, col: 'col-sm-6' })}
       </div>
       <div class="msg-error mb-2" data-error-general></div>
-      <button class="btn btn-sinu xl w-100" type="submit">Registrar lote</button>
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-sinu sobrio" type="button" id="btnCancelarLote">Cancelar</button>
+        <button class="btn btn-sinu" type="submit">Registrar lote</button>
+      </div>
     </form>
   `;
 }
@@ -44,10 +47,10 @@ function Formulario(insumos) {
 function acciones(l) {
   const botones = [];
   if (['activo', 'vencido'].includes(l.estado)) {
-    botones.push(`<button class="btn btn-sinu sm" type="button" data-merma="${l.id}">Merma</button>`);
+    botones.push(`<button class="btn btn-sinu sm contorno-dorado" type="button" data-merma="${l.id}">Merma</button>`);
   }
   if (l.estado === 'vencido') {
-    botones.push(`<button class="btn btn-sinu sm peligro" type="button" data-baja="${l.id}">Dar de baja</button>`);
+    botones.push(`<button class="btn-icono eliminar" type="button" data-baja="${l.id}" title="Dar de baja" aria-label="Dar de baja ${l.codigo}">✕</button>`);
   }
   return `<div class="acciones">${botones.join('')}</div>`;
 }
@@ -70,20 +73,28 @@ export function mountLotesPage({ refreshAlertCount } = {}) {
   const root = document.querySelector('#lotesRoot');
   let verTodos = false;
   let lotes = [];
+  let insumos = [];
+  let formAbierto = false; // el formulario de ingreso arranca cerrado
 
-  async function cargar() {
-    try {
-      const [insumos, respLotes] = await Promise.all([getInsumos(), getLotes({ todos: verTodos })]);
-      lotes = respLotes.data;
-      root.innerHTML = `
-        <div class="cabecera-vista"><h2>Lotes</h2></div>
-        <div class="tarjeta">${Formulario(insumos.data)}</div>
+  function pintar() {
+    root.innerHTML = `
+        <div class="cabecera-vista"><h2>Lotes</h2>
+          ${formAbierto ? '' : '<button class="btn btn-sinu" type="button" id="btnAbrirLote">+ Ingresar lote</button>'}</div>
+        ${formAbierto ? `<div class="tarjeta form-desplegable">${Formulario(insumos)}</div>` : ''}
         <div class="tarjeta">
           <div class="cabecera-vista"><h3>Lotes (orden FEFO)</h3>
             <button class="btn btn-sinu sm" type="button" id="btnVerTodos">${verTodos ? 'Solo con existencias' : 'Ver todos'}</button></div>
           ${Tabla({ columnas: COLUMNAS_LOTE, filas: lotes, vacio: 'No hay lotes con existencias.' })}
         </div>
       `;
+  }
+
+  async function cargar() {
+    try {
+      const [respInsumos, respLotes] = await Promise.all([getInsumos(), getLotes({ todos: verTodos })]);
+      insumos = respInsumos.data;
+      lotes = respLotes.data;
+      pintar();
     } catch (error) {
       root.innerHTML = empty('No fue posible cargar los lotes.');
       showApiError(error);
@@ -112,6 +123,7 @@ export function mountLotesPage({ refreshAlertCount } = {}) {
         fecha_vencimiento: valores.fecha_vencimiento,
       });
       toast('Lote registrado.', 'ok');
+      formAbierto = false;
       await recargar();
     } catch (apiError) {
       mostrarErrorApi(form, apiError);
@@ -121,7 +133,14 @@ export function mountLotesPage({ refreshAlertCount } = {}) {
   root.addEventListener('click', async (event) => {
     const merma = event.target.closest('[data-merma]');
     const baja = event.target.closest('[data-baja]');
-    if (event.target.closest('#btnVerTodos')) {
+    if (event.target.closest('#btnAbrirLote')) {
+      formAbierto = true;
+      pintar();
+      root.querySelector('[name="insumo_id"]')?.focus();
+    } else if (event.target.closest('#btnCancelarLote')) {
+      formAbierto = false;
+      pintar();
+    } else if (event.target.closest('#btnVerTodos')) {
       verTodos = !verTodos;
       cargar();
     } else if (merma) {

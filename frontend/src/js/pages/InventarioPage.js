@@ -8,9 +8,12 @@ import { esquemaInsumo, esValido, validar } from '../utils/validators.js';
 
 const UNIDADES = ['kg', 'g', 'l', 'unidad'].map((u) => ({ value: u, label: u }));
 
+/** Un solo estado por insumo. Prioridad: Agotado → Usar primero → Stock bajo → OK. */
 function tagEstado(fila) {
-  const base = { agotado: tag('Agotado', 'danger'), bajo: tag('Stock bajo', 'warn'), ok: tag('OK', 'ok') }[fila.estado];
-  return fila.usar_primero ? `${base}<br />${tag('Usar primero', 'info')}` : base;
+  if (fila.estado === 'agotado') return tag('Agotado', 'danger');
+  if (fila.usar_primero) return tag('Usar primero', 'info');
+  if (fila.estado === 'bajo') return tag('Stock bajo', 'warn');
+  return tag('OK', 'ok');
 }
 
 function Formulario(insumo) {
@@ -25,7 +28,7 @@ function Formulario(insumo) {
       ${Campo({ name: 'dias_alerta', label: 'Días de alerta de vencimiento', type: 'number', value: insumo?.dias_alerta, attrs: 'min="0" step="1"', help: 'Vacío = 3 días por defecto.' })}
       <div class="msg-error mb-2" data-error-general></div>
       <div class="d-flex gap-2 flex-wrap">
-        ${insumo ? '<button class="btn btn-sinu" type="button" id="btnCancelarInsumo">Cancelar</button>' : ''}
+        <button class="btn btn-sinu sobrio" type="button" id="btnCancelarInsumo">Cancelar</button>
         <button class="btn btn-sinu" type="submit">${insumo ? 'Guardar' : 'Agregar insumo'}</button>
       </div>
     </form>
@@ -33,7 +36,8 @@ function Formulario(insumo) {
 }
 
 const COLUMNAS = [
-  { titulo: 'Insumo', render: (f) => `<b>${escapeHtml(f.insumo.nombre)}</b><br /><small>${f.lotes_activos} lote(s) activo(s)</small>` },
+  { titulo: 'Insumo', render: (f) => `<b>${escapeHtml(f.insumo.nombre)}</b>` },
+  { titulo: 'Lotes activos', clase: 'num', render: (f) => f.lotes_activos },
   { titulo: 'Disponible', clase: 'num', render: (f) => `<b>${formatNumber(f.disponible)}</b> ${f.insumo.unidad}` },
   { titulo: 'Mínimo', clase: 'num', render: (f) => formatNumber(f.insumo.stock_minimo) },
   { titulo: 'Vencido', clase: 'num', render: (f) => (f.vencido ? `<span style="color:var(--danger)">${formatNumber(f.vencido)}</span>` : '—') },
@@ -42,8 +46,8 @@ const COLUMNAS = [
   {
     titulo: '',
     render: (f) => `<div class="acciones">
-      <button class="btn btn-sinu sm" type="button" data-editar="${f.insumo.id}">Editar</button>
-      <button class="btn btn-sinu sm peligro" type="button" data-eliminar="${f.insumo.id}" aria-label="Eliminar ${escapeHtml(f.insumo.nombre)}">✕</button>
+      <button class="btn-icono editar" type="button" data-editar="${f.insumo.id}" title="Editar" aria-label="Editar ${escapeHtml(f.insumo.nombre)}"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+      <button class="btn-icono eliminar" type="button" data-eliminar="${f.insumo.id}" title="Eliminar" aria-label="Eliminar ${escapeHtml(f.insumo.nombre)}">✕</button>
     </div>`,
   },
 ];
@@ -56,18 +60,20 @@ export function mountInventarioPage({ refreshAlertCount } = {}) {
   const root = document.querySelector('#inventarioRoot');
   let filas = [];
   let editando = null;
+  let formAbierto = false; // el formulario de alta/edición arranca cerrado
 
   function pintar() {
     const insumo = filas.find((f) => f.insumo.id === editando)?.insumo ?? null;
     const bajos = filas.filter((f) => f.estado !== 'ok').length;
     root.innerHTML = `
-      <div class="cabecera-vista"><h2>Inventario</h2></div>
+      <div class="cabecera-vista"><h2>Inventario</h2>
+        ${formAbierto ? '' : '<button class="btn btn-sinu" type="button" id="btnAbrirInsumo">+ Nuevo insumo</button>'}</div>
       ${Kpis([
         { texto: 'Insumos', valor: filas.length },
         { texto: 'Bajo mínimo o agotados', valor: bajos, color: bajos ? 'warn' : 'ok' },
         { texto: 'Lotes activos', valor: filas.reduce((s, f) => s + f.lotes_activos, 0) },
       ])}
-      <div class="tarjeta">${Formulario(insumo)}</div>
+      ${formAbierto ? `<div class="tarjeta form-desplegable">${Formulario(insumo)}</div>` : ''}
       <div class="tarjeta"><h3>Existencias por insumo</h3>${Tabla({ columnas: COLUMNAS, filas, vacio: 'No hay insumos. Agregue el primero.' })}</div>
     `;
   }
@@ -104,6 +110,7 @@ export function mountInventarioPage({ refreshAlertCount } = {}) {
         toast('Insumo agregado.', 'ok');
       }
       editando = null;
+      formAbierto = false;
       await cargar();
       refreshAlertCount?.();
     } catch (error) {
@@ -120,12 +127,20 @@ export function mountInventarioPage({ refreshAlertCount } = {}) {
     const editar = event.target.closest('[data-editar]');
     const eliminar = event.target.closest('[data-eliminar]');
 
-    if (event.target.closest('#btnCancelarInsumo')) {
+    if (event.target.closest('#btnAbrirInsumo')) {
       editando = null;
+      formAbierto = true;
+      pintar();
+      root.querySelector('[name="nombre"]').focus();
+    } else if (event.target.closest('#btnCancelarInsumo')) {
+      editando = null;
+      formAbierto = false;
       pintar();
     } else if (editar) {
       editando = Number(editar.dataset.editar);
+      formAbierto = true;
       pintar();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       root.querySelector('[name="nombre"]').focus();
     } else if (eliminar) {
       const id = Number(eliminar.dataset.eliminar);

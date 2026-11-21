@@ -34,7 +34,7 @@ export function MesasPage() {
       <aside class="panel-caja" role="dialog" aria-modal="true" aria-labelledby="panelTitulo">
         <div class="panel-cab">
           <h2 id="panelTitulo">Mesa</h2>
-          <button class="btn btn-sinu" type="button" data-accion="cerrar" aria-label="Cerrar panel" title="Cerrar panel">✕</button>
+          <button class="btn-icono cerrar" type="button" data-accion="cerrar" aria-label="Cerrar panel" title="Cerrar panel">✕</button>
         </div>
         <div class="panel-cuerpo" id="panelCuerpo"></div>
         <div class="panel-pie" id="panelPie"></div>
@@ -177,6 +177,8 @@ export function mountMesasPage({ refreshAlertCount } = {}) {
       `Confirmar pedido · Mesa ${numero}`,
       `${unidades} plato(s) · <b>${formatCurrency(total)}</b>.<br />Se descontarán los insumos (FEFO) y el pedido pasará a cocina.`,
       'Confirmar',
+      false,
+      'Cancelar',
     );
     if (!ok) {
       return;

@@ -23,7 +23,10 @@ function FormularioNuevo() {
         ${Campo({ name: 'contrasena', label: 'Contraseña inicial', type: 'password', attrs: 'autocomplete="new-password"', help: 'Mínimo 6 caracteres.', col: 'col-sm-6' })}
       </div>
       <div class="msg-error mb-2" data-error-general></div>
-      <button class="btn btn-sinu" type="submit">Crear usuario</button>
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-sinu sobrio" type="button" id="btnCancelarUsuario">Cancelar</button>
+        <button class="btn btn-sinu" type="submit">Crear usuario</button>
+      </div>
     </form>`;
 }
 
@@ -36,7 +39,7 @@ function columnas(miId) {
     {
       titulo: '',
       render: (u) => `<div class="acciones">
-        <button class="btn btn-sinu sm" type="button" data-editar="${u.id}">Editar</button>
+        <button class="btn-icono editar" type="button" data-editar="${u.id}" title="Editar" aria-label="Editar ${escapeHtml(u.usuario)}"><i class="bi bi-pencil" aria-hidden="true"></i></button>
         ${
           u.id === miId
             ? ''
@@ -57,17 +60,24 @@ export function mountUsuariosPage() {
   const root = document.querySelector('#usuariosRoot');
   const miId = getCurrentUser()?.id;
   let usuarios = [];
+  let formAbierto = false; // el formulario de nuevo usuario arranca cerrado
 
-  async function cargar() {
-    try {
-      usuarios = (await getUsuarios()).data;
-      root.innerHTML = `
-        <div class="cabecera-vista"><h2>Usuarios</h2><small>Solo el Administrador gestiona las cuentas</small></div>
-        <div class="tarjeta">${FormularioNuevo()}</div>
+  function pintar() {
+    root.innerHTML = `
+        <div class="cabecera-vista"><h2>Usuarios</h2>
+          <div class="acciones"><small>Solo el Administrador gestiona las cuentas</small>
+            ${formAbierto ? '' : '<button class="btn btn-sinu" type="button" id="btnAbrirUsuario">+ Nuevo usuario</button>'}</div></div>
+        ${formAbierto ? `<div class="tarjeta form-desplegable">${FormularioNuevo()}</div>` : ''}
         <div class="tarjeta"><h3>Cuentas</h3>
           <p class="muted">Un usuario desactivado no puede iniciar sesión y su sesión abierta deja de funcionar. Nadie puede desactivarse a sí mismo y siempre queda al menos un Administrador activo.</p>
           ${Tabla({ columnas: columnas(miId), filas: usuarios, vacio: 'No hay usuarios.' })}
         </div>`;
+  }
+
+  async function cargar() {
+    try {
+      usuarios = (await getUsuarios()).data;
+      pintar();
     } catch (error) {
       root.innerHTML = empty('No fue posible cargar los usuarios.');
       showApiError(error);
@@ -118,6 +128,7 @@ export function mountUsuariosPage() {
     try {
       await createUsuario(valores);
       toast(`Usuario ${valores.usuario} creado.`, 'ok');
+      formAbierto = false;
       await cargar();
     } catch (error) {
       mostrarErrorApi(form, error);
@@ -127,7 +138,14 @@ export function mountUsuariosPage() {
   root.addEventListener('click', async (event) => {
     const botonEditar = event.target.closest('[data-editar]');
     const botonEstado = event.target.closest('[data-estado]');
-    if (botonEditar) {
+    if (event.target.closest('#btnAbrirUsuario')) {
+      formAbierto = true;
+      pintar();
+      root.querySelector('[name="usuario"]')?.focus();
+    } else if (event.target.closest('#btnCancelarUsuario')) {
+      formAbierto = false;
+      pintar();
+    } else if (botonEditar) {
       editar(usuarios.find((u) => u.id === Number(botonEditar.dataset.editar)));
     } else if (botonEstado) {
       const usuario = usuarios.find((u) => u.id === Number(botonEstado.dataset.estado));

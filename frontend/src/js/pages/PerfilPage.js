@@ -19,6 +19,13 @@ function vence() {
 
 export function mountPerfilPage() {
   const root = document.querySelector('#perfilRoot');
+  let abierto = false; // los formularios de modificación arrancan cerrados
+
+  function mostrarFormularios(mostrar) {
+    abierto = mostrar;
+    root.querySelector('#perfilEdicion')?.toggleAttribute('hidden', !mostrar);
+    root.querySelector('#btnModificar')?.toggleAttribute('hidden', mostrar);
+  }
 
   async function cargar() {
     try {
@@ -31,6 +38,11 @@ export function mountPerfilPage() {
           { texto: 'Rol', valor: escapeHtml(usuario.rol_nombre) },
           { texto: 'La sesión vence a las', valor: `<span id="perfilVence">${vence()}</span>` },
         ])}
+        <div class="acciones mb-3">
+          <button class="btn btn-sinu" type="button" id="btnModificar" ${abierto ? 'hidden' : ''}>Modificar</button>
+          <button class="btn btn-sinu contorno" type="button" id="btnRenovar">Renovar sesión</button>
+        </div>
+        <div class="form-desplegable" id="perfilEdicion" ${abierto ? '' : 'hidden'}>
         <div class="dos-col">
           <div class="tarjeta">
             <h3>Datos</h3>
@@ -39,7 +51,6 @@ export function mountPerfilPage() {
               <div class="msg-error mb-2" data-error-general></div>
               <div class="acciones">
                 <button class="btn btn-sinu" type="submit">Guardar nombre</button>
-                <button class="btn btn-sinu" type="button" id="btnRenovar">Renovar sesión</button>
               </div>
             </form>
           </div>
@@ -53,6 +64,8 @@ export function mountPerfilPage() {
               <button class="btn btn-sinu" type="submit">Cambiar contraseña</button>
             </form>
           </div>
+        </div>
+        <div class="acciones mt-3"><button class="btn btn-sinu sobrio" type="button" id="btnCerrarEdicion">Cancelar</button></div>
         </div>`;
     } catch (error) {
       root.innerHTML = empty('No fue posible cargar el perfil.');
@@ -70,6 +83,7 @@ export function mountPerfilPage() {
       try {
         actions.actualizarUsuario((await updateProfile(valores)).data);
         toast('Perfil actualizado.', 'ok');
+        abierto = false;
         await cargar();
       } catch (error) {
         mostrarErrorApi(form, error);
@@ -84,6 +98,7 @@ export function mountPerfilPage() {
         form.reset();
         limpiarErrores(form);
         toast('Contraseña actualizada. Úsela en su próximo ingreso.', 'ok');
+        mostrarFormularios(false);
       } catch (error) {
         mostrarErrorApi(form, error);
       }
@@ -92,6 +107,19 @@ export function mountPerfilPage() {
   });
 
   root.addEventListener('click', async (event) => {
+    if (event.target.closest('#btnModificar')) {
+      mostrarFormularios(true);
+      root.querySelector('[name="nombre"]')?.focus();
+      return;
+    }
+    if (event.target.closest('#btnCerrarEdicion')) {
+      root.querySelectorAll('#perfilEdicion form').forEach((f) => {
+        f.reset();
+        limpiarErrores(f);
+      });
+      mostrarFormularios(false);
+      return;
+    }
     if (event.target.closest('#btnRenovar') && (await renovarSesion())) {
       const span = root.querySelector('#perfilVence');
       if (span) span.textContent = vence();

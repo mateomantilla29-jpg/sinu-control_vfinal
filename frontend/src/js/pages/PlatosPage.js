@@ -33,7 +33,7 @@ function FilasReceta(receta, insumos) {
       <div class="row g-2 align-items-end mb-2">
         <div class="col-7"><select class="form-select" data-receta-insumo="${i}" aria-label="Insumo ${i + 1}">${opcionesInsumos(insumos, r.insumo_id)}</select></div>
         <div class="col-3"><input class="form-control" data-receta-cantidad="${i}" type="number" min="0" step="0.001" placeholder="Cant." value="${r.cantidad}" aria-label="Cantidad ${i + 1}" /></div>
-        <div class="col-2"><button class="btn btn-sinu sm peligro w-100" type="button" data-quitar="${i}" aria-label="Quitar insumo">✕</button></div>
+        <div class="col-2"><button class="btn-icono eliminar" type="button" data-quitar="${i}" title="Eliminar" aria-label="Quitar insumo">✕</button></div>
       </div>`,
     )
     .join('');
@@ -56,7 +56,7 @@ function Formulario(plato, receta, insumos) {
       <button class="btn btn-sinu w-100" type="button" id="btnAgregarInsumo">+ Agregar insumo</button>
       <div class="msg-error my-2" data-error-general></div>
       <div class="d-flex gap-2 flex-wrap">
-        ${plato ? '<button class="btn btn-sinu" type="button" id="btnCancelarPlato">Cancelar edición</button>' : ''}
+        <button class="btn btn-sinu sobrio" type="button" id="btnCancelarPlato">${plato ? 'Cancelar edición' : 'Cancelar'}</button>
         <button class="btn btn-sinu" type="submit">${plato ? 'Guardar cambios' : 'Crear plato'}</button>
       </div>
     </form>
@@ -82,8 +82,8 @@ const COLUMNAS = [
   {
     titulo: '',
     render: (d) => `<div class="acciones">
-      <button class="btn btn-sinu sm" type="button" data-editar="${d.plato.id}">Editar</button>
-      <button class="btn btn-sinu sm peligro" type="button" data-eliminar="${d.plato.id}">Eliminar</button>
+      <button class="btn-icono editar" type="button" data-editar="${d.plato.id}" title="Editar" aria-label="Editar ${escapeHtml(d.plato.nombre)}"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+      <button class="btn-icono eliminar" type="button" data-eliminar="${d.plato.id}" title="Eliminar" aria-label="Eliminar ${escapeHtml(d.plato.nombre)}">✕</button>
     </div>`,
   },
 ];
@@ -98,13 +98,15 @@ export function mountPlatosPage({ refreshAlertCount } = {}) {
   let insumos = [];
   let editando = null;
   let receta = [{ insumo_id: null, cantidad: '' }];
+  let formAbierto = false; // el formulario de plato arranca cerrado
 
   const platoEditado = () => menu.find((d) => d.plato.id === editando)?.plato ?? null;
 
   function pintar() {
     root.innerHTML = `
-      <div class="cabecera-vista"><h2>Platos y recetas</h2></div>
-      <div class="tarjeta">${Formulario(platoEditado(), receta, insumos)}</div>
+      <div class="cabecera-vista"><h2>Platos y recetas</h2>
+        ${formAbierto ? '' : '<button class="btn btn-sinu" type="button" id="btnAbrirPlato">+ Nuevo plato</button>'}</div>
+      ${formAbierto ? `<div class="tarjeta form-desplegable">${Formulario(platoEditado(), receta, insumos)}</div>` : ''}
       <div class="tarjeta"><h3>Menú y platos posibles</h3>${Tabla({ columnas: COLUMNAS, filas: menu, vacio: 'No hay platos. Cree el primero.' })}</div>
     `;
   }
@@ -116,6 +118,7 @@ export function mountPlatosPage({ refreshAlertCount } = {}) {
   function reiniciarFormulario() {
     editando = null;
     receta = [{ insumo_id: null, cantidad: '' }];
+    formAbierto = false;
   }
 
   async function cargar() {
@@ -180,7 +183,12 @@ export function mountPlatosPage({ refreshAlertCount } = {}) {
     const editar = event.target.closest('[data-editar]');
     const eliminar = event.target.closest('[data-eliminar]');
 
-    if (event.target.closest('#btnAgregarInsumo')) {
+    if (event.target.closest('#btnAbrirPlato')) {
+      reiniciarFormulario();
+      formAbierto = true;
+      pintar();
+      root.querySelector('[name="nombre"]')?.focus();
+    } else if (event.target.closest('#btnAgregarInsumo')) {
       receta.push({ insumo_id: null, cantidad: '' });
       pintarReceta();
     } else if (quitar) {
@@ -192,6 +200,7 @@ export function mountPlatosPage({ refreshAlertCount } = {}) {
     } else if (editar) {
       editando = Number(editar.dataset.editar);
       receta = platoEditado().receta.map((r) => ({ insumo_id: r.insumo_id, cantidad: r.cantidad }));
+      formAbierto = true;
       pintar();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (eliminar) {

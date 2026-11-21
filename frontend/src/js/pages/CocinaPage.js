@@ -8,8 +8,10 @@ export function CocinaPage() {
   return `
     <section class="contenedor">
       <div class="cabecera-vista"><h2>Cola de cocina</h2><div class="acciones" id="cocinaConteo"></div></div>
-      <p class="muted">Ordenada por hora de llegada. Los tickets con borde rojo usan insumos próximos a vencer: <b>prepárelos primero</b>.</p>
-      <div id="cocinaCola">${loading('Cargando pedidos…')}</div>
+      <div class="tarjeta">
+        <p class="muted">Ordenada por hora de llegada. Los tickets con borde rojo usan insumos próximos a vencer: <b>prepárelos primero</b>.</p>
+        <div id="cocinaCola">${loading('Cargando pedidos…')}</div>
+      </div>
     </section>
   `;
 }

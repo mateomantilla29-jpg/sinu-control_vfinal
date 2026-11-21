@@ -45,13 +45,11 @@ function parseIsoDate(iso) {
   return new Date(y, m - 1, d);
 }
 
-/** 15 oct 2026 */
+/** 15/10/2026 (dd/mm/aaaa, solo números) */
 export function formatDate(iso) {
-  return parseIsoDate(iso).toLocaleDateString('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  const d = parseIsoDate(iso);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
 /** 07:45 p. m. */

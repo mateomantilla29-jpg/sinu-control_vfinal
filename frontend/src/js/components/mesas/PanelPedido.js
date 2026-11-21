@@ -96,8 +96,8 @@ export function PanelPedidoPie(total, hayItems) {
   return `
     <div class="total"><span>Total</span><span>${formatCurrency(total)}</span></div>
     <div class="fila-botones">
-      <button class="btn btn-sinu" type="button" data-accion="validar" ${sinItems}>Validar existencias</button>
-      <button class="btn btn-sinu" type="button" data-accion="vaciar" ${sinItems}>Vaciar</button>
+      <button class="btn btn-sinu contorno" type="button" data-accion="validar" ${sinItems}>Validar existencias</button>
+      <button class="btn btn-sinu contorno" type="button" data-accion="vaciar" ${sinItems}>Vaciar</button>
     </div>
     <button class="btn btn-sinu xl w-100" type="button" data-accion="confirmar" ${sinItems}>Confirmar pedido</button>
   `;

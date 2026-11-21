@@ -280,3 +280,50 @@ body.sin-scroll { overflow: hidden; }
 @media (min-width: 900px) { .dos-col { grid-template-columns: 1fr 1fr; } .dos-col > .tarjeta { margin-bottom: 0; } }
 .cifra-grande { font-family: Georgia, serif; font-size: 2rem; color: var(--dorado-texto); font-weight: 700; }
 .nota-coincide { border-left: 4px solid var(--ok); background: var(--ok-claro); padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; }
+
+/* =========== AJUSTES VISUALES (botones de contorno, iconos, formularios desplegables) =========== */
+/* Botón de usuario del encabezado: solo borde dorado, sin relleno */
+.btn-sinu.btn-usuario, .btn-sinu.btn-usuario:hover, .btn-sinu.btn-usuario:focus-visible,
+.btn-sinu.btn-usuario.show, .btn-sinu.btn-usuario:active { background: #fff; border: 2px solid var(--dorado); color: var(--texto); }
+.btn-sinu.btn-usuario:hover, .btn-sinu.btn-usuario.show { background: var(--dorado-claro); box-shadow: none; }
+
+/* Campana de alertas junto al botón de usuario */
+.btn-alertas { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; border: none; background: transparent; color: var(--dorado-texto); font-size: 1.45rem; cursor: pointer; }
+.btn-alertas:hover, .btn-alertas:focus-visible { background: var(--dorado-claro); }
+.btn-alertas .badge-alertas { position: absolute; top: 2px; right: 0; min-width: 20px; height: 20px; font-size: .72rem; padding: 0 5px; }
+.btn-alertas .badge-alertas.cero { display: none; }
+
+/* Botón de contorno negro, fondo transparente (acciones secundarias) */
+.btn-sinu.contorno { background: transparent; border: 1.5px solid var(--texto); color: var(--texto); }
+.btn-sinu.contorno:hover, .btn-sinu.contorno:focus-visible { background: rgba(26, 26, 26, .06); border-color: var(--texto); box-shadow: none; }
+/* Botón de contorno dorado (p. ej. "Merma") */
+.btn-sinu.contorno-dorado { background: transparent; border: 1.5px solid var(--dorado); color: var(--dorado-texto); }
+.btn-sinu.contorno-dorado:hover, .btn-sinu.contorno-dorado:focus-visible { background: var(--dorado-claro); color: var(--texto); box-shadow: none; }
+/* Botón sobrio de cancelar en los modales: borde gris oscuro delgado */
+.btn-sinu.sobrio { background: transparent; border: 1px solid #4a4a4a; color: var(--texto); }
+.btn-sinu.sobrio:hover, .btn-sinu.sobrio:focus-visible { background: #f2f2f2; border-color: #333; box-shadow: none; }
+.btn-sinu.contorno:disabled, .btn-sinu.contorno-dorado:disabled, .btn-sinu.sobrio:disabled { background: transparent; border-color: var(--deshab-fondo); color: var(--deshab-texto); }
+
+/* Botones de solo icono (cerrar, editar, eliminar, dar de baja): sin fondo ni recuadro */
+.btn-icono { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: none; border-radius: 10px; background: transparent; color: var(--texto); font-size: 1.15rem; line-height: 1; cursor: pointer; }
+.btn-icono:hover, .btn-icono:focus-visible { background: rgba(26, 26, 26, .06); }
+.btn-icono.editar { color: var(--dorado-texto); }
+.btn-icono.eliminar { color: var(--danger); font-size: 1.25rem; }
+.btn-icono.eliminar:hover, .btn-icono.eliminar:focus-visible { background: var(--danger-claro); }
+.btn-icono.cerrar { font-size: 1.5rem; width: 44px; height: 44px; }
+.acciones .btn-icono { flex: 0 0 auto; }
+.acciones { align-items: center; }
+
+/* Botón que despliega un formulario y panel desplegable */
+.form-desplegable { animation: entra .18s ease; }
+.form-desplegable .cabecera-vista { margin-bottom: 8px; }
+
+/* Cocina: tickets en cuadrícula de 3 por fila; botón de estado de tamaño normal */
+.cola { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+@media (max-width: 900px) { .cola { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .cola { grid-template-columns: 1fr; } }
+.ticket .ticket-boton { align-self: flex-start; margin-top: auto; }
+.ticket-mesa { font-size: 1.3rem; }
+.crono { font-size: 1.2rem; }
+.ticket li { font-size: 1rem; }
+.tabla-wrap td .acciones { flex-wrap: nowrap; }

@@ -27,7 +27,7 @@ export function Ticket({ pedido: p, prioridad, por_vencer: porVencer }) {
           )
           .join('')}
       </ul>
-      <button class="btn btn-sinu xl w-100" type="button" data-avanzar="${p.id}">${SIGUIENTE_ACCION[p.estado]}</button>
+      <button class="btn btn-sinu sm ticket-boton" type="button" data-avanzar="${p.id}">${SIGUIENTE_ACCION[p.estado]}</button>
     </div>
   `;
 }

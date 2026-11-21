@@ -27,10 +27,8 @@ export function Navbar(currentView) {
     return '';
   }
 
-  const items = [
-    { action: 'alertas', ico: '🔔', text: 'Alertas', badge: true },
-    { view: 'perfil', ico: '👤', text: 'Mi perfil y contraseña' },
-  ];
+  // "Alertas" ya no va en el menú: es la campana aparte junto al botón de usuario
+  const items = [{ view: 'perfil', ico: '👤', text: 'Mi perfil y contraseña' }];
   const cantidad = getState().alertasActivas;
 
   return `
@@ -39,11 +37,14 @@ export function Navbar(currentView) {
         <img src="${logoUrl}" alt="Logo Gastrobar Sinu" />
         <div class="marca">Sinu Control<small>Gastrobar · Bello</small></div>
         <div class="flex-grow-1"></div>
+        <button class="btn-alertas" type="button" data-action="alertas" title="Alertas" aria-label="Alertas">
+          <i class="bi bi-bell" aria-hidden="true"></i>
+          <span class="badge-alertas ${cantidad ? '' : 'cero'}" data-contador-alertas aria-label="alertas activas">${cantidad}</span>
+        </button>
         <div class="dropdown">
           <button class="btn btn-sinu btn-usuario dropdown-toggle" type="button" data-bs-toggle="dropdown"
             aria-expanded="false" title="Menú de usuario">
             <span aria-hidden="true">${role.ico}</span>${escapeHtml(role.nombre)}
-            <span class="badge-alertas ${cantidad ? '' : 'cero'}" data-contador-alertas aria-label="alertas activas">${cantidad}</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end menu-usuario">
             <li class="menu-cab"><b>${escapeHtml(user.nombre)}</b><br /><small>Usuario: ${escapeHtml(user.usuario)}</small></li>

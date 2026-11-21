@@ -12,7 +12,7 @@ export function closeModal() {
  * Confirmación antes de acciones destructivas o irreversibles.
  * `messageHtml` puede llevar <b>; todo dato del usuario debe ir escapado.
  */
-export function confirmar(title, messageHtml, okText = 'Confirmar', danger = false) {
+export function confirmar(title, messageHtml, okText = 'Confirmar', danger = false, cancelText = 'Volver') {
   return new Promise((resolve) => {
     raiz().innerHTML = `
       <div class="modal-fondo">
@@ -20,7 +20,7 @@ export function confirmar(title, messageHtml, okText = 'Confirmar', danger = fal
           <h2 id="confirmTitulo">${escapeHtml(title)}</h2>
           <p>${messageHtml}</p>
           <div class="botones">
-            <button class="btn btn-sinu" type="button" data-respuesta="no">Volver</button>
+            <button class="btn btn-sinu sobrio" type="button" data-respuesta="no">${escapeHtml(cancelText)}</button>
             <button class="btn btn-sinu ${danger ? 'peligro' : ''}" type="button" data-respuesta="si">${escapeHtml(okText)}</button>
           </div>
         </div>
@@ -69,7 +69,7 @@ export function formModal({ titulo, cuerpoHtml, textoOk = 'Guardar', peligro = f
           ${cuerpoHtml}
           <div class="msg-error" data-error-general></div>
           <div class="botones">
-            <button class="btn btn-sinu" type="button" data-cerrar>Volver</button>
+            <button class="btn btn-sinu sobrio" type="button" data-cerrar>Volver</button>
             <button class="btn btn-sinu ${peligro ? 'peligro' : ''}" type="submit">${escapeHtml(textoOk)}</button>
           </div>
         </form>
